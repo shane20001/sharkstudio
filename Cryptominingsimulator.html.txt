@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Mining Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300,400,700&display=swap" rel="stylesheet">
+<style>
+:root {
+--primary-bg: #121212; /* Deeper, darker background */
+--secondary-bg: #1e1e2e; /* Dark blue-purple for main container */
+--card-bg: #2a2a3a; /* Slightly lighter card background for contrast */
+--text-color: #e0e0e0;
+--accent-color: #8a2be2; /* Blue Violet - more "techy" purple */
+--button-gradient-start: #8a2be2;
+--button-gradient-end: #6a1aae; /* Darker purple for gradient end */
+--shadow-color: rgba(0, 0, 0, 0.6); /* Darker, more pronounced shadows */
+--border-radius: 10px; /* Slightly larger border radius */
+--padding-base: 25px; /* Slightly more padding */
+--success-color: #32cd32; /* Lime Green for positive effects */
+--purchased-color: #4a4a5a; /* Color for purchased button state */
+--card-gradient-start: #4B0082; /* Indigo */
+--card-gradient-end: #8A2BE2; /* Blue Violet */
+--tab-inactive-bg: #333344;
+--tab-active-bg: var(--accent-color);
+--tab-hover-bg: #9b48f0;
+}
+
+body {
+font-family: 'Roboto', sans-serif;
+margin: 0;
+padding: 0;
+background: var(--primary-bg);
+color: var(--text-color);
+display: flex;
+justify-content: center;
+align-items: center; /* Center vertically as well */
+min-height: 100vh;
+overflow-y: auto;
+box-sizing: border-box;
+position: relative; /* For pseudo-element background */
+z-index: 1; /* Ensure content is above background */
+}
+
+body::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.08) 0%, rgba(138, 43, 226, 0) 30%),
+radial-gradient(circle at 90% 80%, rgba(50, 205, 50, 0.05) 0%, rgba(50, 205, 50, 0) 30%);
+background-size: 150% 150%;
+animation: subtleShift 30s ease-in-out infinite alternate;
+z-index: -1; /* Place behind content */
+}
+
+@keyframes subtleShift {
+0% { background-position: 0% 0%; }
+100% { background-position: 100% 100%; }
+}
+
+.game-container {
+background-color: var(--secondary-bg);
+border-radius: var(--border-radius);
+box-shadow: 0 15px 40px var(--shadow-color); /* More prominent shadow */
+padding: var(--padding-base);
+margin: 30px; /* More margin */
+max-width: 950px; /* Slightly wider */
+width: 100%;
+box-sizing: border-box;
+display: flex;
+flex-direction: column;
+gap: var(--padding-base);
+border: 1px solid rgba(138, 43, 226, 0.2); /* Subtle border glow */
+}
+
+header {
+text-align: center;
+padding-bottom: 15px; /* More padding */
+border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Lighter, subtle border */
+}
+
+h1 {
+color: var(--accent-color);
+margin-bottom: 8px; /* More margin */
+font-weight: 700;
+text-shadow: 0 0 10px rgba(138, 43, 226, 0.7); /* Glow effect for title */
+}
+
+.tagline {
+font-size: 1em; /* Slightly larger */
+color: #a0a0a0;
+font-weight: 300;
+}
+
+/* Updated mining-stats section to only contain the crypto card */
+.mining-stats {
+display: flex;
+justify-content: center; /* Center the single crypto card */
+align-items: flex-start;
+padding: 10px 0; /* Just some vertical padding */
+/* Removed background, padding, shadow, border to avoid redundancy with crypto-card's strong styling */
+gap: 0; /* No gap needed if only one item */
+}
+
+.stat-item {
+text-align: center;
+/* Flex properties handled by parent containers where appropriate */
+padding: 10px 5px; /* Keep individual item padding for consistency if they're used outside flex */
+box-sizing: border-box;
+}
+
+/* Crypto Card Specific Styling */
+#crypto-card {
+background: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
+color: white;
+padding: 30px 35px; /* Increased padding for less squished look */
+border-radius: 10px; /* Slightly less rounded for flatter look */
+box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); /* Reduced shadow for flatter look */
+flex-basis: 380px; /* Slightly wider for less squished look */
+height: 250px; /* Increased height for less squished look */
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+align-items: flex-start; /* Align contents to start */
+text-align: left; /* Align text within card to left */
+position: relative; /* For chip positioning */
+flex-grow: 0; /* Prevent it from growing too much */
+flex-shrink: 0; /* Prevent it from shrinking too much */
+}
+
+.card-header {
+display: flex;
+justify-content: space-between;
+width: 100%;
+align-items: center;
+margin-bottom: 15px;
+}
+
+.card-logo {
+font-family: 'Roboto', sans-serif;
+font-weight: 700;
+font-size: 1.5em;
+letter-spacing: 2px;
+color: rgba(255, 255, 255, 0.9);
+text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+display: flex; /* To align text and icon */
+align-items: center;
+}
+
+/* Coin icon styling */
+.coin-icon {
+height: 30px; /* Size for card header icon */
+vertical-align: middle;
+margin-left: 8px; /* Space between text and icon */
+filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)); /* Subtle glow */
+}
+
+.card-number {
+font-family: 'Roboto Mono', monospace; /* Use a monospace font for card number */
+font-size: 1.6em; /* Slightly larger for less squished look */
+letter-spacing: 3px;
+margin-bottom: 10px;
+color: rgba(255, 255, 255, 0.9);
+}
+
+.card-number span {
+margin-right: 5px; /* Space between groups of numbers */
+}
+
+.card-number .last-digits {
+font-weight: bold;
+}
+
+.card-balance-container {
+width: 100%;
+margin-top: auto; /* Push to bottom */
+text-align: left;
+}
+
+#crypto-card .stat-label {
+color: rgba(255, 255, 255, 0.7);
+font-size: 0.85em;
+margin-bottom: 2px;
+}
+
+#crypto-card .stat-value {
+font-size: 2.8em; /* Larger balance display for less squished look */
+color: var(--text-color);
+text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+letter-spacing: 1px;
+white-space: nowrap; /* Prevent wrapping */
+}
+
+#crypto-card .stat-value.pulsing {
+animation: pulseGlowCard 0.5s ease-out forwards;
+}
+
+@keyframes pulseGlowCard {
+0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0); }
+50% { text-shadow: 0 0 15px rgba(255, 255, 255, 0.8); } /* White glow */
+100% { text-shadow: 0 0 5px rgba(255, 255, 255, 0); }
+}
+
+.card-footer {
+display: flex;
+justify-content: space-between;
+width: 100%;
+font-size: 0.8em; /* Slightly larger for less squished look */
+color: rgba(255, 255, 255, 0.6);
+margin-top: 10px; /* Space from balance */
+}
+
+.card-holder {
+font-weight: 500;
+text-transform: uppercase;
+}
+
+.card-valid-thru {
+font-weight: 500;
+}
+
+h2 {
+text-align: center;
+margin-top: 15px; /* More margin */
+color: var(--accent-color);
+font-weight: 700;
+}
+
+/* Tab Navigation Styling */
+.tab-navigation {
+display: flex;
+justify-content: center;
+flex-wrap: wrap;
+gap: 10px;
+margin-bottom: 20px;
+border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+padding-bottom: 10px;
+}
+
+.tab-button {
+background-color: var(--tab-inactive-bg);
+color: var(--text-color);
+border: none;
+padding: 12px 20px;
+border-radius: 5px;
+font-size: 1.1em;
+font-weight: 500;
+cursor: pointer;
+transition: background-color 0.3s ease, transform 0.2s ease;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.tab-button:hover:not(.active) {
+background-color: var(--tab-hover-bg);
+transform: translateY(-2px);
+}
+
+.tab-button.active {
+background-color: var(--tab-active-bg);
+font-weight: 700;
+box-shadow: 0 4px 10px rgba(138, 43, 226, 0.5);
+}
+
+.upgrade-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 15px;
+}
+
+.upgrade-card {
+background-color: var(--card-bg);
+border-radius: var(--border-radius);
+padding: calc(var(--padding-base) / 1.2); /* More padding */
+box-shadow: 0 8px 20px var(--shadow-color); /* More shadow */
+text-align: center;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+min-height: 200px; /* Taller cards */
+transition: transform 0.3s ease, box-shadow 0.3s ease;
+border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle border */
+}
+
+.upgrade-card:hover {
+transform: translateY(-5px); /* Lift more on hover */
+box-shadow: 0 12px 25px rgba(138, 43, 226, 0.5); /* Accent color glow */
+}
+
+.upgrade-card.purchased-display {
+border: 1px solid var(--success-color); /* Green border for purchased items */
+box-shadow: 0 8px 20px rgba(50, 205, 50, 0.3); /* Green shadow */
+cursor: default;
+transform: none; /* No lift on hover for purchased display */
+}
+
+.upgrade-card.purchased-display:hover {
+transform: none;
+box-shadow: 0 8px 20px rgba(50, 205, 50, 0.3); /* Maintain green shadow */
+}
+
+.upgrade-card h3 {
+margin-top: 5px;
+color: var(--text-color);
+font-weight: 600; /* Slightly bolder */
+font-size: 1.3em;
+}
+
+.upgrade-card p {
+font-size: 1em; /* Slightly larger */
+color: #c0c0c0;
+flex-grow: 1;
+margin-bottom: 10px;
+}
+
+.upgrade-effect {
+font-weight: 700;
+color: var(--success-color); /* Use success color */
+margin-bottom: 15px; /* More margin */
+font-size: 1.1em;
+}
+
+.upgrade-card button {
+background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
+color: white;
+border: none;
+padding: 14px 25px; /* Larger padding */
+border-radius: 7px; /* Slightly more rounded buttons */
+font-size: 1.2em; /* Larger font */
+font-weight: 700;
+cursor: pointer;
+transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+margin-top: 15px;
+width: 100%;
+box-sizing: border-box;
+box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Button shadow */
+}
+
+.upgrade-card button:hover:not(:disabled) {
+transform: translateY(-3px); /* Lift more */
+box-shadow: 0 8px 20px rgba(138, 43, 226, 0.5); /* Accent color glow */
+}
+
+.upgrade-card button:disabled {
+background: var(--purchased-color); /* Greyer for disabled */
+cursor: not-allowed;
+opacity: 0.7; /* Slightly less opaque */
+box-shadow: none;
+transform: none;
+}
+
+.upgrade-card button:disabled.purchased {
+background: var(--purchased-color);
+cursor: default;
+opacity: 1; /* Keep full opacity for purchased */
+color: #b0b0b0; /* Lighter text for purchased */
+font-weight: 500;
+}
+
+.upgrade-card .cost {
+font-weight: bold;
+}
+
+.no-upgrades-message {
+text-align: center;
+font-size: 1.2em;
+color: #a0a0a0;
+padding: 50px 20px;
+grid-column: 1 / -1; /* Make it span all columns */
+}
+
+@media (max-width: 768px) {
+.game-container {
+margin: 20px;
+padding: 20px;
+}
+
+.upgrade-grid {
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 15px;
+}
+
+#crypto-card {
+flex-basis: auto; /* Allow card to resize */
+width: 100%; /* Take full width on smaller screens */
+height: auto; /* Auto height */
+}
+
+.tab-button {
+font-size: 1em;
+padding: 10px 15px;
+}
+}
+
+@media (max-width: 600px) {
+.game-container {
+margin: 10px;
+padding: 15px;
+}
+
+.mining-stats {
+flex-direction: column; /* Keep column for consistency if other items added later */
+gap: 20px;
+}
+
+.upgrade-grid {
+grid-template-columns: 1fr;
+}
+
+.upgrade-card button {
+padding: 12px 20px;
+font-size: 1.1em;
+}
+
+#crypto-card .stat-value {
+font-size: 2.2em; /* Adjusted for smaller screens */
+}
+
+.card-number {
+font-size: 1.3em; /* Adjusted for smaller screens */
+}
+}
+</style>
+<script type="importmap">
+{
+"imports": {
+
+}
+}
+</script>
+</head>
+<body>
+<div class="game-container">
+<header>
+<h1>Crypto Mining Simulator</h1>
+<p class="tagline">Mine virtual crypto and upgrade your rigs!</p>
+</header>
+
+<section class="mining-stats">
+<div id="crypto-card" class="stat-item">
+<div class="card-header">
+<span class="card-logo">CRPT COIN <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Ethereum_logo_2014.svg/628px-Ethereum_logo_2014.svg.png" alt="CRPT Icon" class="coin-icon"></span>
+<!-- Removed: <img src="crypto_chip.png" alt="Card Chip" class="card-chip"> -->
+</div>
+<div class="card-number">
+<span>••••</span> <span>••••</span> <span>••••</span> <span class="last-digits">1234</span>
+</div>
+<div class="card-balance-container">
+<span class="stat-label">Balance:</span>
+<span id="crypto-balance" class="stat-value">0.00 CRPT</span>
+</div>
+<div class="card-footer">
+<span class="card-holder">VIRTUAL MINER</span>
+<span class="card-valid-thru">VALID THRU 99/99</span>
+</div>
+</div>
+</section>
+
+<section class="upgrades">
+<h2>Upgrades</h2>
+<div class="tab-navigation">
+<button class="tab-button active" data-category="gpus">GPUs</button>
+<button class="tab-button" data-category="cpus">CPUs</button>
+<button class="tab-button" data-category="cooling">Cooling</button>
+<button class="tab-button" data-category="asic">ASIC Miners</button>
+<button class="tab-button" data-category="infrastructure">Infrastructure</button>
+<button class="tab-button" data-category="purchased">My Upgrades</button>
+</div>
+<div id="upgrade-content">
+<div class="upgrade-grid">
+<!-- Upgrades will be rendered here dynamically -->
+</div>
+</div>
+</section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+let cryptoBalance = 0;
+let miningRate = 0.2; // Initial mining rate CRPT/sec
+let currentTab = 'gpus'; // Default active tab
+
+// Get DOM elements
+const balanceDisplay = document.getElementById('crypto-balance');
+const upgradeGrid = document.querySelector('.upgrade-grid');
+const tabButtons = document.querySelectorAll('.tab-button');
+
+// Define upgrades
+const upgrades = {
+gpus: {
+gpu1: { cost: 10, rateIncrease: 0.5, name: "GPU Upgrade v1.0", description: "Boosts mining power with a dedicated graphics processing unit.", purchased: false },
+gpu2: { cost: 80, rateIncrease: 2.5, name: "Next-Gen GPU Array", description: "Enhances processing with advanced multi-GPU setup.", purchased: false },
+gpu3: { cost: 400, rateIncrease: 15.0, name: "Quantum GPU Grid", description: "Leverages quantum computing principles for extreme mining.", purchased: false },
+gpu4: { cost: 1500, rateIncrease: 50.0, name: "Graviton GPU Cluster", description: "Utilizes advanced graviton technology for unparalleled hash rates.", purchased: false },
+gpu5: { cost: 6000, rateIncrease: 200.0, name: "Neural Network Processor", description: "A specialized AI-powered GPU designed for hyper-efficient mining algorithms.", purchased: false }
+},
+cpus: {
+cpu1: { cost: 20, rateIncrease: 0.8, name: "Basic CPU Cluster", description: "Establishes a foundational processing cluster.", purchased: false },
+cpu2: { cost: 150, rateIncrease: 5.0, name: "Advanced CPU Rack", description: "Integrates high-performance server-grade CPUs.", purchased: false },
+cpu3: { cost: 700, rateIncrease: 25.0, name: "Neural Processing Unit", description: "Specialized AI chips for highly efficient data processing.", purchased: false },
+cpu4: { cost: 1800, rateIncrease: 60.0, name: "Ultra Sipolss CPU", description: "Unleash unparalleled processing power with this cutting-edge CPU.", purchased: false },
+cpu5: { cost: 5500, rateIncrease: 180.0, name: "Fusion Core Processor", description: "Harnesses miniature fusion reactions for extreme computational power.", purchased: false }
+},
+cooling: {
+cooling1: { cost: 50, rateIncrease: 1.0, name: "Cooling System", description: "Optimizes hardware performance by preventing overheating.", purchased: false },
+cooling2: { cost: 300, rateIncrease: 8.0, name: "Liquid Immersion Cooling", description: "Submerges hardware in dielectric fluid for ultimate heat dissipation.", purchased: false },
+cooling3: { cost: 1200, rateIncrease: 40.0, name: "Cryogenic Cooling Chamber", description: "Achieves near-absolute zero temperatures for peak efficiency.", purchased: false },
+cooling4: { cost: 4500, rateIncrease: 150.0, name: "Absolute Zero Refrigerator", description: "Maintains optimal temperatures by pushing the limits of physics.", purchased: false }
+},
+asic: {
+asic1: { cost: 200, rateIncrease: 3.0, name: "ASIC Miner", description: "Specialized hardware designed for highly efficient crypto mining.", purchased: false },
+asic2: { cost: 750, rateIncrease: 12.0, name: "Industrial ASIC Farm", description: "A compact farm of custom-built ASIC chips.", purchased: false },
+asic3: { cost: 3000, rateIncrease: 75.0, name: "Quantum Tunneling Miner", description: "Theoretical miner using quantum effects for unparalleled speed.", purchased: false },
+asic4: { cost: 9000, rateIncrease: 250.0, name: "Interdimensional ASIC Array", description: "Taps into alternate dimensions for hyper-accelerated computation.", purchased: false }
+},
+infrastructure: {
+serverfarm1: { cost: 1000, rateIncrease: 10.0, name: "Server Farm Lease", description: "Lease a massive server farm for unparalleled computing power.", purchased: false },
+datacenter: { cost: 5000, rateIncrease: 50.0, name: "Hyperscale Datacenter", description: "Own and operate a cutting-edge, global datacenter.", purchased: false },
+planetarynetwork: { cost: 20000, rateIncrease: 200.0, name: "Planetary Mining Network", description: "Connects mining rigs across the globe for distributed power.", purchased: false },
+solararray: { cost: 75000, rateIncrease: 750.0, name: "Orbital Solar Array", description: "Powers your operations with an enormous space-based solar farm.", purchased: false },
+quantumfabric: { cost: 250000, rateIncrease: 2500.0, name: "Quantum Fabric Infrastructure", description: "A continent-spanning network utilizing quantum entanglement for instantaneous data transfer.", purchased: false }
+}
+};
+
+// Function to update the display
+function updateDisplay() {
+balanceDisplay.textContent = `${cryptoBalance.toFixed(2)} CRPT`;
+
+// Add pulse effect to balance display
+balanceDisplay.classList.add('pulsing');
+
+// Remove the class after the animation duration to allow re-triggering
+setTimeout(() => {
+balanceDisplay.classList.remove('pulsing');
+}, 500); // Match CSS animation duration
+
+// Only update button states if not on the "My Upgrades" tab
+if (currentTab !== 'purchased') {
+updateUpgradeButtonStates();
+}
+}
+
+// Function to mine crypto
+function mineCrypto() {
+cryptoBalance += miningRate;
+updateDisplay();
+}
+
+// Function to handle upgrade purchases
+function buyUpgrade(upgradeId, category) {
+const upgrade = upgrades[category][upgradeId];
+
+if (!upgrade || upgrade.purchased) {
+return; // Already purchased or invalid upgrade
+}
+
+if (cryptoBalance >= upgrade.cost) {
+cryptoBalance -= upgrade.cost;
+miningRate += upgrade.rateIncrease;
+upgrade.purchased = true; // Mark as purchased
+updateDisplay();
+console.log(`Purchased ${upgrade.name}! New balance: ${cryptoBalance.toFixed(2)}, New rate: ${miningRate.toFixed(2)}`);
+// If the "My Upgrades" tab is currently active, re-render it
+if (currentTab === 'purchased') {
+renderUpgradesForTab('purchased');
+}
+} else {
+console.log(`Not enough crypto for ${upgrade.name}. Need ${upgrade.cost}, have ${cryptoBalance.toFixed(2)}.`);
+}
+}
+
+// Function to render upgrades for the current active tab
+function renderUpgradesForTab(category) {
+upgradeGrid.innerHTML = ''; // Clear current upgrades
+
+let upgradesToRender = [];
+
+if (category === 'purchased') {
+// Collect all purchased upgrades from all categories
+for (const catKey in upgrades) {
+for (const upgradeId in upgrades[catKey]) {
+const upgrade = upgrades[catKey][upgradeId];
+if (upgrade.purchased) {
+upgradesToRender.push(upgrade);
+}
+}
+}
+if (upgradesToRender.length === 0) {
+upgradeGrid.innerHTML = '<p class="no-upgrades-message">You haven\'t purchased any upgrades yet. Go to other tabs to buy some!</p>';
+return;
+}
+} else {
+// For other categories, render items from that specific category
+upgradesToRender = Object.values(upgrades[category]);
+}
+
+upgradesToRender.forEach(upgrade => {
+const upgradeCard = document.createElement('div');
+upgradeCard.classList.add('upgrade-card');
+if (upgrade.purchased && category === 'purchased') {
+upgradeCard.classList.add('purchased-display'); // Add class for styling purchased items in "My Upgrades" tab
+}
+
+let buttonHtml = '';
+if (category !== 'purchased') { // Only show buy button on non-purchased tabs
+buttonHtml = `<button data-upgrade-id="${Object.keys(upgrades[category]).find(key => upgrades[category][key] === upgrade)}" data-upgrade-category="${category}">Buy for <span class="cost">${upgrade.cost}</span> CRPT</button>`;
+} else {
+// For "My Upgrades" tab, just show status
+buttonHtml = `<button disabled class="purchased">Purchased!</button>`;
+}
+
+upgradeCard.innerHTML = `
+<h3>${upgrade.name}</h3>
+<p>${upgrade.description}</p>
+<p class="upgrade-effect">+${upgrade.rateIncrease.toFixed(1)} CRPT/sec</p>
+${buttonHtml}
+`;
+upgradeGrid.appendChild(upgradeCard);
+});
+
+if (category !== 'purchased') {
+updateUpgradeButtonStates(); // Update states for newly rendered buttons only on purchase tabs
+}
+}
+
+// Function to update the disabled state of upgrade buttons
+function updateUpgradeButtonStates() {
+// Select all buttons within the current upgrade grid
+const currentUpgradeButtons = upgradeGrid.querySelectorAll('button');
+
+currentUpgradeButtons.forEach(button => {
+const upgradeId = button.dataset.upgradeId;
+const category = button.dataset.upgradeCategory;
+const upgrade = upgrades[category][upgradeId];
+
+if (upgrade.purchased) {
+button.disabled = true;
+button.textContent = "Purchased!";
+button.style.cursor = 'default';
+button.classList.add('purchased'); // Add class for specific styling
+} else if (cryptoBalance < upgrade.cost) {
+button.disabled = true;
+button.classList.remove('purchased'); // Ensure class is removed if not purchased
+} else {
+button.disabled = false;
+button.textContent = `Buy for ${upgrade.cost} CRPT`;
+button.classList.remove('purchased'); // Ensure class is removed
+}
+});
+}
+
+// Add event listeners for tab buttons
+tabButtons.forEach(button => {
+button.addEventListener('click', (event) => {
+// Remove 'active' class from all tab buttons
+tabButtons.forEach(btn => btn.classList.remove('active'));
+// Add 'active' class to the clicked button
+event.target.classList.add('active');
+
+currentTab = event.target.dataset.category;
+renderUpgradesForTab(currentTab); // Render upgrades for the selected tab
+});
+});
+
+// Add event listener to the upgrade grid itself (event delegation)
+upgradeGrid.addEventListener('click', (event) => {
+if (event.target.tagName === 'BUTTON' && event.target.dataset.upgradeId) {
+const upgradeId = event.target.dataset.upgradeId;
+const category = event.target.dataset.upgradeCategory;
+buyUpgrade(upgradeId, category);
+}
+});
+
+// Start mining interval
+setInterval(mineCrypto, 1000); // Mine every second
+
+// Initial display update and render default tab
+renderUpgradesForTab(currentTab);
+updateDisplay();
+});
+</script>
+</body>
+</html>

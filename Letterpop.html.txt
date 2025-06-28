@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letter Pop Game</title>
+<link rel="icon" href="https://media.discordapp.net/attachments/1387428129362149567/1387883560513306736/LetterPopicon.png?ex=685ef6ca&is=685da54a&hm=f8c93e44674c536c9c78759d2214d005e2b441cad1d7af6717343b2875797379&=&format=webp&quality=lossless&width=735&height=735" type="image/png">
+<!-- For Google Sites embedding, CSS and JS are now inline. -->
+<!-- If using external assets (like sounds), replace '/hit.mp3' and '/miss.mp3' in the script below with absolute URLs -->
+<style>
+body {
+margin: 0;
+overflow: hidden;
+background-color: #1a1a1a;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+font-family: 'Comic Sans MS', cursive, sans-serif; /* More cartoon font */
+color: white;
+}
+
+/* Menu Container styles */
+#menu-container {
+position: fixed; /* Covers the whole viewport */
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: #1a1a1a; /* Covers the game area background */
+z-index: 20; /* Make sure it's above game area */
+/* Initial state: visible */
+opacity: 1;
+visibility: visible;
+pointer-events: auto; /* Allow interaction with menu buttons */
+transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+display: flex; /* To center screen content */
+justify-content: center;
+align-items: center;
+perspective: 1000px; /* For 3D transforms */
+/* Add background image for the menu container */
+background-image: url('https://s3.amazonaws.com/gameartpartnersimagehost/wp-content/uploads/2018/03/Game_Background_189.png');
+background-size: cover;
+background-position: center;
+}
+
+#menu-container.hidden {
+opacity: 0;
+visibility: hidden;
+pointer-events: none; /* Prevent interaction when hidden */
+/* Optional: add a slight rotate/translate effect on hide */
+transform: rotateY(10deg) translateX(-100%);
+}
+
+/* Screen styles within menu-container */
+/* Applying .screen styles to #game-end-screen as well for consistency */
+.screen {
+position: absolute; /* Position within menu-container or game-area */
+width: 100%;
+height: 100%;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+opacity: 0;
+visibility: hidden;
+pointer-events: none; /* By default, not interactive */
+transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out; /* Add transform transition */
+transform: rotateY(-10deg); /* Initial state off-screen */
+/* Ensure screens inside game-area don't interfere until active */
+z-index: 5; /* Below score */
+}
+
+/* Active screen styles */
+.screen.active {
+opacity: 1;
+visibility: visible;
+pointer-events: auto; /* Only the active screen is interactive */
+transform: rotateY(0deg); /* Active state center */
+z-index: 15; /* Above game elements when active */
+}
+
+/* Style for title and difficulty headings */
+#title-screen h1, #difficulty-screen h2 {
+margin-bottom: 40px;
+font-size: 60px; /* Larger title */
+text-shadow: 0 0 20px rgba(70, 130, 180, 0.9), 0 0 5px rgba(70, 130, 180, 0.5); /* More intense glow */
+letter-spacing: 3px;
+color: #ffeb3b; /* Bright yellow */
+text-shadow: 5px 5px 0px #f44336, 10px 10px 0px #2196f3; /* 3D pop-out effect */
+}
+
+/* Add styling for the game icon */
+#game-icon {
+width: 300px; /* Adjust size as needed */
+height: 300px;
+margin-bottom: 20px; /* Space between icon and title */
+/* Removed border-radius and box-shadow to make it normal */
+border-radius: 0;
+box-shadow: none;
+}
+
+/* Game End Screen specific styles */
+#game-end-screen, #pause-screen {
+background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent overlay */
+z-index: 15; /* Ensure it's above circles */
+}
+
+#game-end-screen h2, #pause-screen h2 {
+font-size: 50px;
+margin-bottom: 20px;
+text-shadow: 0 0 15px rgba(70, 130, 180, 0.8);
+color: #4CAF50; /* Green for success */
+}
+
+#game-end-screen p {
+font-size: 36px;
+margin-bottom: 30px;
+text-shadow: 0 0 10px rgba(70, 130, 180, 0.6);
+}
+
+/* Button styles */
+button {
+padding: 12px 25px; /* More padding */
+font-size: 22px; /* Slightly larger font */
+cursor: pointer;
+margin: 10px;
+border: 3px solid #2a4c6a; /* Darker border for cartoon look */
+border-radius: 8px; /* Rounder corners */
+background-color: #6495ed; /* CornflowerBlue - slightly brighter */
+color: white;
+text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+box-shadow: 3px 3px 8px rgba(0,0,0,0.4); /* Add button shadow */
+transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+position: relative; /* For pseudo-elements */
+overflow: hidden; /* For ripple effect */
+}
+
+button:hover {
+background-color: #7ab8f0; /* Lighter on hover */
+border-color: #3b6b90;
+box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+transform: translateY(-2px); /* Lift effect */
+}
+
+button:active {
+transform: scale(0.95); /* More pronounced press */
+box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+background-color: #5a8be0; /* Slightly darker when pressed */
+border-color: #2a4c6a;
+}
+
+/* Ripple effect for buttons */
+button::after {
+content: '';
+position: absolute;
+border-radius: 50%;
+background-color: rgba(255, 255, 255, 0.7);
+width: 100px;
+height: 100px;
+margin-top: -50px;
+margin-left: -50px;
+opacity: 0;
+transition: all 0.7s ease-out;
+transform: scale(0);
+pointer-events: none;
+}
+
+button:active::after {
+transform: scale(2);
+opacity: 1;
+transition: 0s;
+}
+
+/* Difficulty Selector styles */
+.difficulty-selector {
+display: flex;
+align-items: center;
+font-size: 36px; /* Larger text */
+margin-bottom: 30px;
+text-shadow: 0 0 10px rgba(70, 130, 180, 0.7), 0 0 3px rgba(70, 130, 180, 0.3);
+}
+
+.difficulty-selector button {
+font-size: 36px; /* Match text size */
+padding: 5px 18px; /* Adjust padding */
+margin: 0 20px; /* More space */
+}
+
+#difficulty-text {
+min-width: 200px; /* Ensure consistent width */
+text-align: center;
+font-weight: bold;
+/* Add transition for smooth text change animation */
+transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+#difficulty-text.text-changing {
+opacity: 0;
+transform: scale(0.9);
+}
+
+/* Game Area styles */
+#game-area {
+width: 800px;
+height: 600px;
+border: 4px solid #6495ed; /* Cartoon border */
+position: relative;
+overflow: hidden;
+background-color: #333; /* Slightly lighter background */
+box-shadow: 0 0 20px rgba(0,0,0,0.5);
+border-radius: 10px; /* Slightly rounded corners */
+pointer-events: none; /* Initially non-interactive */
+/* Default background for game area - will be overridden by difficulty */
+background-image: linear-gradient(45deg, #4CAF50 5%, #8BC34A 95%); /* Greenish gradient */
+background-size: cover;
+background-position: center;
+transition: background-image 0.5s ease-in-out; /* Smooth transition for background */
+}
+
+/* When menu-container is hidden, make game-area interactive */
+.active-game { /* Using a class applied by JS instead of + selector for clarity */
+pointer-events: auto;
+}
+
+#score {
+position: absolute;
+top: 15px; /* Slightly more space */
+left: 15px;
+font-size: 28px; /* Larger score */
+z-index: 10;
+text-shadow: 2px 2px 3px rgba(0,0,0,0.5);
+color: #f0f0f0;
+}
+
+/* In-game quit button */
+#in-game-quit-button {
+position: absolute;
+top: 15px;
+right: 15px;
+padding: 8px 15px;
+font-size: 18px;
+z-index: 10;
+background-color: #f44336; /* Red color for quit */
+border-color: #c62828;
+box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+display: none; /* Initially hidden */
+}
+
+/* Quit button out of game area */
+#global-quit-button {
+position: fixed; /* Fixed position relative to viewport */
+bottom: 20px;
+right: 20px;
+padding: 10px 20px;
+font-size: 20px;
+background-color: #f44336; /* Red color for quit */
+border-color: #c62828;
+z-index: 30; /* Ensure it's above everything else */
+display: none; /* Initially hidden, shown when game starts */
+}
+
+/* Circle styles */
+.circle {
+position: absolute;
+width: 60px;
+height: 60px;
+border-radius: 50%;
+background-color: #4682b4; /* SteelBlue - Base color */
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 30px;
+color: white;
+cursor: pointer;
+user-select: none;
+/* Updated transitions for smoother movement and effects */
+transition: transform 0.5s ease-out, opacity 0.5s ease-out, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+box-shadow: 0 0 12px rgba(70, 130, 180, 0.7); /* Base glow */
+border: 3px solid rgba(255, 255, 255, 0.5); /* Subtle white outline */
+will-change: transform, opacity;
+opacity: 0; /* Start hidden for animate-in */
+transform: scale(0.5); /* Start small for animate-in */
+animation: bounce 0.8s infinite alternate ease-in-out; /* Continuous subtle bounce */
+}
+
+/* Animation for circle appearing */
+.circle.animate-in {
+opacity: 1;
+transform: scale(1);
+transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.3s ease-out; /* Bouncy scale-in */
+}
+
+.circle.fading {
+background-color: #ff4500; /* OrangeRed - Warning color */
+box-shadow: 0 0 15px rgba(255, 69, 0, 0.8); /* Orange glow */
+border-color: rgba(255, 255, 255, 0.7);
+/* Opacity fading handled by transition on the 'fading' state */
+opacity: 0.3; /* Target opacity when fading */
+animation: pulse 1s infinite; /* Pulsing effect when fading */
+}
+
+.circle.miss {
+background-color: #ff0000; /* Red */
+opacity: 0; /* Fades to 0 */
+transform: scale(1.2); /* Expands slightly on miss */
+box-shadow: 0 0 20px rgba(255, 0, 0, 1); /* Intense red glow */
+border-color: white;
+transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease-out; /* Bouncy scale and fade */
+animation: explode 0.5s forwards; /* Explode effect */
+}
+
+.circle.hit {
+background-color: #32cd32; /* LimeGreen */
+opacity: 0; /* Fades to 0 */
+transform: scale(0.7); /* Shrinks slightly on hit */
+box-shadow: 0 0 20px rgba(50, 205, 50, 1); /* Intense green glow */
+border-color: white;
+transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease-out; /* Bouncy scale and fade */
+animation: pop 0.5s forwards; /* Pop effect */
+}
+
+/* Keyframe animations */
+@keyframes bounce {
+from { transform: translateY(0); }
+to { transform: translateY(-5px); }
+}
+
+@keyframes pulse {
+0% { box-shadow: 0 0 15px rgba(255, 69, 0, 0.8); }
+50% { box-shadow: 0 0 25px rgba(255, 69, 0, 1); }
+100% { box-shadow: 0 0 15px rgba(255, 69, 0, 0.8); }
+}
+
+@keyframes explode {
+0% { transform: scale(1); opacity: 1; background-color: #ff0000; }
+50% { transform: scale(1.5); opacity: 0.5; background-color: #ff0000; }
+100% { transform: scale(0); opacity: 0; background-color: #ff0000; }
+}
+
+@keyframes pop {
+0% { transform: scale(1); opacity: 1; background-color: #32cd32; }
+50% { transform: scale(1.2); opacity: 0.5; background-color: #32cd32; }
+100% { transform: scale(0); opacity: 0; background-color: #32cd32; }
+}
+
+/* Version text */
+#version-text {
+position: fixed;
+bottom: 10px;
+right: 10px;
+color: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+font-size: 14px;
+font-family: sans-serif;
+z-index: 40; /* Above all other UI elements */
+user-select: none; /* Prevent selection */
+}
+</style>
+</head>
+<body>
+<!-- Menu Container (Initially visible, covers game area) -->
+<div id="menu-container">
+<!-- Title Screen -->
+<div id="title-screen" class="screen active">
+<img id="game-icon" src="https://media.discordapp.net/attachments/1387428129362149567/1387883560513306736/LetterPopicon.png?ex=685ef6ca&is=685da54a&hm=f8c93e44674c536c9c78759d2214d005e2b441cad1d7af6717343b2875797379&=&format=webp&quality=lossless&width=735&height=735" alt="Letter Pop Icon">
+
+<button id="play-button">Play</button>
+</div>
+
+<!-- Difficulty Selection Screen -->
+<div id="difficulty-screen" class="screen">
+<h2>Select Difficulty</h2>
+<div class="difficulty-selector">
+<button id="left-arrow">&lt;</button>
+<span id="difficulty-text">Normal</span>
+<button id="right-arrow">&gt;</button>
+</div>
+<button id="select-button">Select</button>
+</div>
+</div>
+
+<!-- Game Area (Initially hidden/non-interactive by menu-container) -->
+<div id="game-area">
+<div id="score">Score: 0</div>
+<!-- Pause Screen -->
+<div id="pause-screen" class="screen">
+<h2>Paused</h2>
+<button id="resume-button">Resume</button>
+<button id="quit-button">Quit Game</button>
+</div>
+<!-- Game Over/End Screen -->
+<div id="game-end-screen" class="screen">
+<h2 id="end-message">Game Over!</h2>
+<p id="final-score">Final Score: 0</p>
+<button id="play-again-button">Play Again</button>
+<button id="main-menu-button">Main Menu</button>
+</div>
+</div>
+
+<!-- Global Quit Button (Outside game-area for persistent display) -->
+<button id="global-quit-button">Quit</button>
+
+<!-- Version Text -->
+<div id="version-text">V2.2</div>
+
+<script>
+class AudioManager {
+constructor() {
+this.audioContext = null;
+this.hitBuffer = null;
+this.missBuffer = null;
+this.audioInitialized = false;
+}
+
+async initAudio() {
+if (this.audioInitialized) return;
+this.audioInitialized = true;
+try {
+this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+if (this.audioContext.state === 'suspended') {
+console.log("AudioContext suspended, attempting to resume...");
+await this.audioContext.resume();
+console.log("AudioContext resumed.");
+}
+
+if (this.audioContext.state === 'running') {
+this.hitBuffer = await this.loadSound('/hit.mp3');
+this.missBuffer = await this.loadSound('/miss.mp3');
+} else {
+console.warn("AudioContext did not resume, sounds might not load.");
+}
+
+} catch (e) {
+console.error("Error initializing AudioContext:", e);
+this.audioContext = null;
+}
+}
+
+async loadSound(url) {
+if (!this.audioContext) {
+console.error("AudioContext not initialized.");
+return null;
+}
+try {
+const response = await fetch(url);
+const arrayBuffer = await response.arrayBuffer();
+return await this.audioContext.decodeAudioData(arrayBuffer);
+} catch (e) {
+console.error("Error loading sound:", url, e);
+return null;
+}
+}
+
+playSound(buffer) {
+if (!buffer || !this.audioContext || this.audioContext.state !== 'running') {
+return;
+}
+try {
+const source = this.audioContext.createBufferSource();
+source.buffer = buffer;
+source.connect(this.audioContext.destination);
+source.start(0);
+} catch (e) {
+console.error("Error playing sound:", e);
+}
+}
+}
+
+class UIManager {
+constructor(menuContainer, titleScreen, difficultyScreen, gameEndScreen, pauseScreen,
+difficultyTextElement, endMessageElement, finalScoreElement,
+gameArea, globalQuitButton) {
+this.menuContainer = menuContainer;
+this.titleScreen = titleScreen;
+this.difficultyScreen = difficultyScreen;
+this.gameEndScreen = gameEndScreen;
+this.pauseScreen = pauseScreen;
+this.difficultyTextElement = difficultyTextElement;
+this.endMessageElement = endMessageElement;
+this.finalScoreElement = finalScoreElement;
+this.gameArea = gameArea;
+this.globalQuitButton = globalQuitButton;
+}
+
+showScreen(screenElement) {
+// Hide all screens within menu-container and game-area first
+[this.titleScreen, this.difficultyScreen, this.gameEndScreen, this.pauseScreen].forEach(screen => {
+screen.classList.remove('active');
+});
+
+if (screenElement === this.titleScreen || screenElement === this.difficultyScreen) {
+this.showMenuContainer();
+} else {
+this.hideMenuContainer();
+}
+
+screenElement.classList.add('active');
+}
+
+hideScreen(screenElement) {
+screenElement.classList.remove('active');
+}
+
+hideMenuContainer() {
+this.menuContainer.classList.add('hidden');
+this.gameArea.classList.add('active-game');
+this.showGlobalQuitButton();
+}
+
+showMenuContainer() {
+this.menuContainer.classList.remove('hidden');
+this.gameArea.classList.remove('active-game');
+this.hideGlobalQuitButton();
+}
+
+showGlobalQuitButton() {
+this.globalQuitButton.style.display = 'block';
+}
+
+hideGlobalQuitButton() {
+this.globalQuitButton.style.display = 'none';
+}
+
+showEndScreen(message, score) {
+this.endMessageElement.textContent = message;
+this.finalScoreElement.textContent = `Final Score: ${score}`;
+this.showScreen(this.gameEndScreen);
+}
+
+updateDifficultyText(text, animate = true) {
+if (!animate) {
+this.difficultyTextElement.textContent = text;
+return;
+}
+
+this.difficultyTextElement.classList.add('text-changing');
+const transitionDurationMs = 300;
+
+setTimeout(() => {
+this.difficultyTextElement.textContent = text;
+this.difficultyTextElement.classList.remove('text-changing');
+}, transitionDurationMs / 2);
+}
+
+initializeMenu(initialDifficultyText) {
+this.showMenuContainer();
+this.showScreen(this.titleScreen);
+this.hideGlobalQuitButton();
+this.updateDifficultyText(initialDifficultyText, false);
+}
+}
+
+class Game {
+constructor(scoreElement, gameArea, audioManager, uiManager, difficulties) {
+this.scoreElement = scoreElement;
+this.gameArea = gameArea;
+this.audioManager = audioManager;
+this.uiManager = uiManager;
+this.difficulties = difficulties;
+
+this.score = 0;
+this.activeCircles = [];
+this.isGameRunning = false;
+this.isGamePaused = false;
+this.lastCircleTime = 0;
+this.clearedCirclesCount = 0;
+this.animationFrameId = null;
+
+// Difficulty settings
+this.difficultySettings = {
+Easy: {
+lifespan: 3000,
+interval: 1500,
+fadeStart: 2500,
+circlesToClear: 20,
+background: 'url("https://st2.depositphotos.com/3759469/6798/v/450/depositphotos_67982979-stock-illustration-horizontally-seamless-game-background.jpg")'
+},
+Normal: {
+lifespan: 2000,
+interval: 1000,
+fadeStart: 1500,
+circlesToClear: 30,
+background: 'url("https://cdn.gamedevmarket.net/wp-content/uploads/20191203174021/2028097cdc8bca296bd7ebd978871589.jpg")'
+},
+Hard: {
+lifespan: 1200,
+interval: 700,
+fadeStart: 800,
+circlesToClear: 40,
+background: 'url("https://img.freepik.com/premium-photo/dark-room-with-red-lights-black-background_860528-232.jpg")'
+}
+};
+this.currentDifficultyIndex = 1; // Default to Normal
+this.selectedDifficulty = this.difficulties[this.currentDifficultyIndex];
+
+// Parameters updated by difficulty
+this.currentLifespan = 0;
+this.currentMinInterval = 0;
+this.currentFadeStart = 0;
+this.currentCirclesToClear = 0;
+this.currentBackground = '';
+}
+
+getRandomLetter() {
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+return alphabet[Math.floor(Math.random() * alphabet.length)];
+}
+
+createCircle() {
+if (!this.isGameRunning || this.isGamePaused || this.clearedCirclesCount >= this.currentCirclesToClear) {
+return;
+}
+
+const letter = this.getRandomLetter();
+const circle = document.createElement('div');
+circle.classList.add('circle');
+circle.textContent = letter;
+
+const gameAreaRect = this.gameArea.getBoundingClientRect();
+const circleSize = 60;
+
+const maxX = gameAreaRect.width - circleSize;
+const maxY = gameAreaRect.height - circleSize;
+
+const randomX = Math.random() * maxX;
+const randomY = Math.random() * maxY;
+
+circle.style.left = `${randomX}px`;
+circle.style.top = `${randomY}px`;
+
+circle.id = `circle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+const creationTime = performance.now();
+
+this.gameArea.appendChild(circle);
+
+this.activeCircles.push({
+id: circle.id,
+element: circle,
+letter: letter,
+creationTime: creationTime,
+lifespan: this.currentLifespan,
+fadeStart: this.currentFadeStart
+});
+
+requestAnimationFrame(() => {
+circle.classList.add('animate-in');
+});
+}
+
+updateCircles(currentTime) {
+const elementsToRemove = this.gameArea.querySelectorAll('.circle.hit, .circle.miss');
+elementsToRemove.forEach(el => {
+const isInActiveList = this.activeCircles.some(circle => circle.id === el.id);
+if (!isInActiveList) {
+el.remove();
+}
+});
+
+for (let i = this.activeCircles.length - 1; i >= 0; i--) {
+const circleData = this.activeCircles[i];
+const element = circleData.element;
+const elapsed = currentTime - circleData.creationTime;
+const timeLeft = circleData.lifespan - elapsed;
+
+if (elapsed >= circleData.fadeStart) {
+if (!element.classList.contains('fading') && !element.classList.contains('hit') && !element.classList.contains('miss')) {
+element.classList.add('fading');
+}
+} else {
+if (element.classList.contains('fading')) {
+element.classList.remove('fading');
+}
+}
+
+if (timeLeft <= 0) {
+if (!element.classList.contains('hit') && !element.classList.contains('miss')) {
+element.classList.add('miss');
+this.audioManager.playSound(this.audioManager.missBuffer);
+setTimeout(() => {
+element.remove();
+}, 500);
+}
+this.activeCircles.splice(i, 1);
+}
+}
+}
+
+handleKeyDown(event) {
+const pressedKey = event.key.toUpperCase();
+const matchedIndex = this.activeCircles.findIndex(circle => circle.letter === pressedKey);
+
+if (matchedIndex !== -1) {
+const circleData = this.activeCircles[matchedIndex];
+const element = circleData.element;
+
+if (element.classList.contains('hit') || element.classList.contains('miss')) {
+return;
+}
+
+element.classList.add('hit');
+this.audioManager.playSound(this.audioManager.hitBuffer);
+
+this.score += 10;
+this.scoreElement.textContent = `Score: ${this.score}`;
+this.clearedCirclesCount++;
+
+this.activeCircles.splice(matchedIndex, 1);
+
+setTimeout(() => {
+element.remove();
+}, 500);
+
+if (this.clearedCirclesCount >= this.currentCirclesToClear) {
+this.endGame("Game Complete!");
+}
+
+} else {
+if (pressedKey.length === 1 && pressedKey >= 'A' && pressedKey <= 'Z') {
+this.score = Math.max(0, this.score - 5);
+this.scoreElement.textContent = `Score: ${this.score}`;
+}
+}
+}
+
+gameLoop = (currentTime) => {
+if (!this.isGameRunning) {
+console.log("Game loop stopping.");
+this.animationFrameId = null;
+return;
+}
+
+if (this.isGamePaused) {
+this.animationFrameId = requestAnimationFrame(this.gameLoop);
+return;
+}
+
+const jitter = Math.random() * 200 - 100;
+if (this.clearedCirclesCount + this.activeCircles.length < this.currentCirclesToClear + 5) {
+if (currentTime - this.lastCircleTime > this.currentMinInterval + jitter) {
+this.createCircle();
+this.lastCircleTime = currentTime;
+}
+}
+
+this.updateCircles(currentTime);
+
+this.animationFrameId = requestAnimationFrame(this.gameLoop);
+}
+
+applyDifficultySettings(difficultyName) {
+const settings = this.difficultySettings[difficultyName];
+if (settings) {
+this.currentLifespan = settings.lifespan;
+this.currentMinInterval = settings.interval;
+this.currentFadeStart = settings.fadeStart;
+this.currentCirclesToClear = settings.circlesToClear;
+this.currentBackground = settings.background;
+this.gameArea.style.backgroundImage = this.currentBackground;
+console.log(`Applied difficulty: ${difficultyName}`, { lifespan: this.currentLifespan, interval: this.currentMinInterval, fadeStart: this.currentFadeStart, circlesToClear: this.currentCirclesToClear, background: this.currentBackground });
+} else {
+console.error(`Difficulty settings not found for: ${difficultyName}`);
+this.applyDifficultySettings('Normal');
+}
+}
+
+startGameLoop() {
+if (this.isGameRunning) return;
+
+this.isGameRunning = true;
+this.isGamePaused = false;
+this.score = 0;
+this.clearedCirclesCount = 0;
+this.activeCircles.length = 0;
+
+this.gameArea.querySelectorAll('.circle').forEach(c => c.remove());
+
+this.scoreElement.textContent = `Score: ${this.score}`;
+this.lastCircleTime = performance.now();
+
+this.applyDifficultySettings(this.selectedDifficulty);
+
+console.log("Starting game loop...");
+this.animationFrameId = requestAnimationFrame(this.gameLoop);
+this.uiManager.showGlobalQuitButton();
+}
+
+pauseGame() {
+if (!this.isGameRunning || this.isGamePaused) return;
+this.isGamePaused = true;
+console.log("Game paused.");
+this.uiManager.showScreen(this.uiManager.pauseScreen);
+}
+
+resumeGame() {
+if (!this.isGameRunning || !this.isGamePaused) return;
+this.isGamePaused = false;
+console.log("Game resumed.");
+this.uiManager.hideScreen(this.uiManager.pauseScreen);
+if (!this.animationFrameId) {
+this.animationFrameId = requestAnimationFrame(this.gameLoop);
+}
+}
+
+endGame(message = "Game Over!") {
+if (!this.isGameRunning && this.animationFrameId === null) return;
+this.isGameRunning = false;
+this.isGamePaused = false;
+console.log("Game ended.");
+
+if (this.animationFrameId) {
+cancelAnimationFrame(this.animationFrameId);
+this.animationFrameId = null;
+}
+
+this.uiManager.showEndScreen(message, this.score);
+this.uiManager.hideGlobalQuitButton();
+
+setTimeout(() => {
+this.gameArea.querySelectorAll('.circle').forEach(c => c.remove());
+}, 1000);
+}
+}
+
+const gameArea = document.getElementById('game-area');
+const scoreElement = document.getElementById('score');
+const menuContainer = document.getElementById('menu-container');
+const titleScreen = document.getElementById('title-screen');
+const difficultyScreen = document.getElementById('difficulty-screen');
+const playButton = document.getElementById('play-button');
+const leftArrow = document.getElementById('left-arrow');
+const rightArrow = document.getElementById('right-arrow');
+const difficultyTextElement = document.getElementById('difficulty-text');
+const selectButton = document.getElementById('select-button');
+const gameEndScreen = document.getElementById('game-end-screen');
+const endMessageElement = document.getElementById('end-message');
+const finalScoreElement = document.getElementById('final-score');
+const playAgainButton = document.getElementById('play-again-button');
+const mainMenuButton = document.getElementById('main-menu-button');
+const pauseScreen = document.getElementById('pause-screen');
+const resumeButton = document.getElementById('resume-button');
+const quitButton = document.getElementById('quit-button');
+const globalQuitButton = document.getElementById('global-quit-button');
+
+// Difficulty settings moved to Game class or a separate config
+const difficulties = ['Easy', 'Normal', 'Hard'];
+
+// Instantiate managers
+const audioManager = new AudioManager();
+const uiManager = new UIManager(
+menuContainer, titleScreen, difficultyScreen, gameEndScreen, pauseScreen,
+difficultyTextElement, endMessageElement, finalScoreElement,
+gameArea, globalQuitButton
+);
+const game = new Game(scoreElement, gameArea, audioManager, uiManager, difficulties);
+
+// --- Event Listeners ---
+playButton.addEventListener('click', () => uiManager.showScreen(difficultyScreen));
+
+leftArrow.addEventListener('click', () => {
+game.currentDifficultyIndex = (game.currentDifficultyIndex - 1 + difficulties.length) % difficulties.length;
+uiManager.updateDifficultyText(difficulties[game.currentDifficultyIndex], true);
+});
+
+rightArrow.addEventListener('click', () => {
+game.currentDifficultyIndex = (game.currentDifficultyIndex + 1) % difficulties.length;
+uiManager.updateDifficultyText(difficulties[game.currentDifficultyIndex], true);
+});
+
+selectButton.addEventListener('click', () => {
+game.selectedDifficulty = difficulties[game.currentDifficultyIndex];
+uiManager.hideScreen(difficultyScreen);
+setTimeout(() => {
+uiManager.hideMenuContainer();
+game.startGameLoop();
+}, 500);
+});
+
+playAgainButton.addEventListener('click', () => {
+uiManager.hideScreen(gameEndScreen);
+uiManager.showScreen(difficultyScreen);
+});
+
+mainMenuButton.addEventListener('click', () => {
+game.endGame("Game Over!"); // Ensure game state is properly reset
+uiManager.showScreen(titleScreen);
+});
+
+resumeButton.addEventListener('click', () => game.resumeGame());
+
+quitButton.addEventListener('click', () => {
+game.endGame("Game Over!");
+uiManager.showScreen(titleScreen);
+});
+
+globalQuitButton.addEventListener('click', () => {
+game.endGame("Game Over!");
+uiManager.showScreen(titleScreen);
+});
+
+// Global keydown listener for game input and pause
+document.addEventListener('keydown', (event) => {
+// Handle pausing
+if (event.key === 'Escape' && game.isGameRunning) {
+if (game.isGamePaused) {
+game.resumeGame();
+} else {
+game.pauseGame();
+}
+return;
+}
+
+// If game is paused or not running, only allow menu navigation
+if (!game.isGameRunning || game.isGamePaused) {
+if (uiManager.difficultyScreen.classList.contains('active')) {
+if (event.key === 'ArrowLeft') {
+event.preventDefault();
+leftArrow.click();
+} else if (event.key === 'ArrowRight') {
+event.preventDefault();
+rightArrow.click();
+} else if (event.key === 'Enter') {
+event.preventDefault();
+selectButton.click();
+}
+} else if (uiManager.gameEndScreen.classList.contains('active')) {
+if (event.key === 'Enter') {
+event.preventDefault();
+playAgainButton.click();
+}
+} else if (uiManager.pauseScreen.classList.contains('active')) {
+if (event.key === 'Enter') {
+event.preventDefault();
+resumeButton.click();
+} else if (event.key === 'q' || event.key === 'Q') {
+event.preventDefault();
+quitButton.click();
+}
+}
+return;
+}
+
+// If game is running and not paused, handle letter input
+game.handleKeyDown(event);
+});
+
+// --- Initialization ---
+// Ensure audio context resume is triggered by a user gesture.
+document.addEventListener('click', () => audioManager.initAudio(), { once: true });
+document.addEventListener('keydown', () => audioManager.initAudio(), { once: true });
+
+window.onload = () => {
+uiManager.initializeMenu(difficulties[game.currentDifficultyIndex]);
+};
+</script>
+</body>
+</html>

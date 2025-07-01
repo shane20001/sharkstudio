@@ -535,15 +535,13 @@
         <section class="mining-stats">
             <div id="crypto-card" class="stat-item">
                 <div class="card-header">
-                    <span class="card-brand">CRPT Corp.</span> <!-- Added brand name -->
-                    <span class="card-logo">CRPT COIN <img src="/crypto_coin_icon.png" alt="CRPT Icon" class="coin-icon"></span>
+                    <span class="card-brand">CRPT Corp.</span> <span class="card-logo">CRPT COIN <img src="crypto_coin_icon.png" alt="CRPT Icon" class="coin-icon"></span>
                 </div>
                 
                 <div class="card-number">
                     <span>••••</span> <span>••••</span> <span>••••</span> <span class="last-digits">1234</span>
                 </div>
-                <div class="card-balance-info"> <!-- Wrapper for both balance and rate -->
-                    <div class="balance-row">
+                <div class="card-balance-info"> <div class="balance-row">
                         <span class="stat-label">Balance:</span>
                         <span id="crypto-balance" class="stat-value">0.00 CRPT</span>
                     </div>
@@ -568,14 +566,12 @@
             <div id="upgrade-content">
                 <div class="tab-content-wrapper">
                     <div class="upgrade-grid">
-                        <!-- Upgrades will be rendered here dynamically -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </section>
     </div>
 
-    <!-- Temporary Message Area -->
     <div id="message-area"></div>
 
     <script>
@@ -585,7 +581,6 @@
         const soundBuffers = {};
 
         // Function to initialize AudioContext and load sounds
-        // This should be triggered by the first user gesture to comply with browser autoplay policies
         async function initAudioContextOnce() {
             if (!audioContextInitialized) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -593,9 +588,9 @@
                 console.log("AudioContext initialized.");
 
                 // Load all sounds
-                await loadSound('buy', '/buy_upgrade.mp3');
-                await loadSound('mine', '/mine_tick.mp3');
-                await loadSound('click', '/button_click.mp3');
+                await loadSound('buy', 'buy_upgrade.mp3');
+                await loadSound('mine', 'mine_tick.mp3');
+                await loadSound('click', 'button_click.mp3');
             }
         }
 
@@ -698,246 +693,227 @@
                     solararray: { cost: 75000, rateIncrease: 750.0, name: "Orbital Solar Array", description: "Powers your operations with an enormous space-based solar farm.", purchased: false },
                     quantumfabric: { cost: 250000, rateIncrease: 2500.0, name: "Quantum Fabric Infrastructure", description: "A continent-spanning network utilizing quantum entanglement for instantaneous data transfer.", purchased: false },
                     spacestation: { cost: 1000000, rateIncrease: 10000.0, name: "Deep Space Mining Station", description: "Establishes a self-sufficient mining outpost beyond Earth's orbit.", purchased: false },
-                    blackholeharness: { cost: 5000000, rateIncrease: 50000.0, name: "Micro Black Hole Harness", description: "Taps into the Hawking radiation of a controlled micro black hole for energy.", purchased: false }
-                }
+                    blackholeharness: { cost: 5000000, rateIncrease: 50000.0, name: "Micro Black Hole Harness", description: "Taps into the energy of a contained micro black hole for ultimate processing power.", purchased: false }
+                },
+                purchased: {} // This category will be dynamically populated
             };
 
-            // Function to update the display
-            function updateDisplay() {
-                const balanceText = `${cryptoBalance.toFixed(2)} CRPT`;
-                balanceDisplay.textContent = balanceText;
 
-                // Add pulse effect to balance display
-                balanceDisplay.classList.add('pulsing');
+            // Function to format balance for display
+            function formatBalance(balance) {
+                // Ensure balance is a number
+                balance = Number(balance);
 
-                // Remove the class after the animation duration to allow re-triggering
-                setTimeout(() => {
-                    balanceDisplay.classList.remove('pulsing');
-                }, 500); // Match CSS animation duration
+                if (balance >= 1e12) { // Trillions
+                    return (balance / 1e12).toFixed(2) + 'T CRPT';
+                } else if (balance >= 1e9) { // Billions
+                    return (balance / 1e9).toFixed(2) + 'B CRPT';
+                } else if (balance >= 1e6) { // Millions
+                    return (balance / 1e6).toFixed(2) + 'M CRPT';
+                } else if (balance >= 1e3) { // Thousands
+                    return (balance / 1e3).toFixed(2) + 'K CRPT';
+                } else {
+                    return balance.toFixed(2) + ' CRPT';
+                }
+            }
 
-                // Dynamic font sizing for balance display
-                balanceDisplay.classList.remove('balance-small-font', 'balance-smaller-font', 'balance-smallest-font'); // Clear existing size classes
+            // Function to update balance display and size
+            function updateBalanceDisplay() {
+                const formattedBalance = formatBalance(cryptoBalance);
+                balanceDisplay.textContent = formattedBalance;
 
-                if (balanceText.length > 22) { // e.g., 10,000,000,000.00 CRPT (23 chars)
+                // Dynamically adjust font size based on length
+                const currentLength = formattedBalance.length;
+                balanceDisplay.classList.remove('balance-small-font', 'balance-smaller-font', 'balance-smallest-font');
+
+                if (currentLength > 15) {
                     balanceDisplay.classList.add('balance-smallest-font');
-                } else if (balanceText.length > 18) { // e.g., 100,000,000.00 CRPT (19 chars)
+                } else if (currentLength > 12) {
                     balanceDisplay.classList.add('balance-smaller-font');
-                } else if (balanceText.length > 14) { // e.g., 1,000,000.00 CRPT (15 chars)
+                } else if (currentLength > 9) {
                     balanceDisplay.classList.add('balance-small-font');
                 }
-                // If 14 or less characters, it will use the default font size (2.8em or 2.2em on mobile).
+            }
 
-                // Only update button states if not on the "My Upgrades" tab, or if a purchase occurred
-                if (currentTab !== 'purchased') {
-                    updateUpgradeButtonStates();
+            // Update mining rate display on the card
+            function updateMiningRateDisplay() {
+                const miningRateElement = document.getElementById('mining-rate');
+                if (miningRateElement) { // Check if the element exists before trying to update
+                     miningRateElement.textContent = `${formatBalance(miningRate).replace(' CRPT', '')}/sec`;
                 }
             }
 
-            // Function to mine crypto
-            function mineCrypto() {
-                cryptoBalance += miningRate;
-                updateDisplay();
-                playSound('mine', 0.3); // Play subtle mine sound, made louder
-            }
 
-            // Function to handle upgrade purchases
-            function buyUpgrade(upgradeId, category) {
-                const upgrade = upgrades[category][upgradeId];
-
-                if (!upgrade || upgrade.purchased) {
-                    return; // Already purchased or invalid upgrade
+            // Function to generate upgrade card HTML
+            function createUpgradeCard(id, data, category) {
+                const card = document.createElement('div');
+                card.classList.add('upgrade-card');
+                if (data.purchased) {
+                    card.classList.add('purchased-display');
                 }
 
-                if (cryptoBalance >= upgrade.cost) {
-                    // Added detailed console logs to help debug rate increase issues
-                    console.log(`--- Attempting to purchase: ${upgrade.name} ---`);
-                    console.log(`Current Balance: ${cryptoBalance.toFixed(2)} CRPT`);
-                    console.log(`Current Mining Rate BEFORE purchase: ${miningRate.toFixed(2)} CRPT/sec`);
-                    console.log(`Upgrade cost: ${upgrade.cost} CRPT`);
-                    console.log(`Upgrade's advertised rate increase (upgrade.rateIncrease): ${upgrade.rateIncrease} CRPT/sec`);
+                card.innerHTML = `
+                    <h3>${data.name}</h3>
+                    <p>${data.description}</p>
+                    <p class="upgrade-effect">Mining +${data.rateIncrease.toFixed(1)} CRPT/sec</p>
+                    <button id="buy-${id}" ${data.purchased ? 'disabled class="purchased"' : ''}>
+                        ${data.purchased ? 'Purchased!' : `Buy for <span class="cost">${data.cost} CRPT</span>`}
+                    </button>
+                `;
 
-                    cryptoBalance -= upgrade.cost;
-                    miningRate += upgrade.rateIncrease; // This is where the rate is increased
-
-                    upgrade.purchased = true; // Mark as purchased
-                    updateDisplay();
-                    playSound('buy', 0.7); // Play buy sound
-                    
-                    console.log(`NEW Balance AFTER purchase: ${cryptoBalance.toFixed(2)} CRPT`);
-                    console.log(`NEW Mining Rate AFTER purchase: ${miningRate.toFixed(2)} CRPT/sec`);
-                    console.log(`Difference in mining rate: ${(miningRate - (miningRate - upgrade.rateIncrease)).toFixed(2)} CRPT/sec (should match advertised increase)`);
-
-                    // Show success message on screen
-                    const message = `Purchased "${upgrade.name}"! Rate increased by +${upgrade.rateIncrease.toFixed(2)} CRPT/sec. New total rate: ${miningRate.toFixed(2)} CRPT/sec.`;
-                    showMessage(message, 'success');
-
-                    // If the "My Upgrades" tab is currently active, re-render it
-                    if (currentTab === 'purchased') {
-                        _renderContent('purchased'); // Re-render 'purchased' tab without animation delay
-                        tabContentWrapper.classList.add('active-tab-content'); // Ensure it's visible
-                    } else {
-                        // If we bought an item on a regular tab, its button state needs update
-                        updateUpgradeButtonStates();
-                    }
-                } else {
-                    console.log(`Not enough crypto for ${upgrade.name}. Need ${upgrade.cost}, have ${cryptoBalance.toFixed(2)}.`);
-                    // Show error message on screen
-                    showMessage(`Not enough CRPT for "${upgrade.name}". Need ${upgrade.cost.toFixed(2)} CRPT.`, 'error');
-                }
+                const buyButton = card.querySelector(`#buy-${id}`);
+                buyButton.addEventListener('click', (event) => {
+                    // Initialize audio context on first click
+                    initAudioContextOnce();
+                    playSound('click', 0.6); // Play click sound
+                    handlePurchase(id, category);
+                });
+                return card;
             }
 
-            // Helper function to actually render content into the grid
-            function _renderContent(category) {
-                upgradeGrid.innerHTML = ''; // Clear current upgrades
-
-                let upgradesToRender = [];
+            // Function to render upgrades based on category
+            function renderUpgrades(category) {
+                // Clear existing upgrades
+                upgradeGrid.innerHTML = '';
+                
+                let upgradesToDisplay = {};
 
                 if (category === 'purchased') {
-                    // Collect all purchased upgrades from all categories
-                    for (const catKey in upgrades) {
-                        for (const upgradeId in upgrades[catKey]) {
-                            const upgrade = upgrades[catKey][upgradeId];
-                            if (upgrade.purchased) {
-                                upgradesToRender.push(upgrade);
+                    // Populate the 'purchased' category dynamically
+                    upgrades.purchased = {}; // Clear previous state
+                    for (const cat in upgrades) {
+                        if (cat !== 'purchased') {
+                            for (const id in upgrades[cat]) {
+                                if (upgrades[cat][id].purchased) {
+                                    upgrades.purchased[id] = upgrades[cat][id];
+                                }
                             }
                         }
                     }
-                    if (upgradesToRender.length === 0) {
-                        upgradeGrid.innerHTML = '<p class="no-upgrades-message">You haven\'t purchased any upgrades yet. Go to other tabs to buy some!</p>';
-                        return;
-                    }
+                    upgradesToDisplay = upgrades.purchased;
                 } else {
-                    // For other categories, render items from that specific category
-                    upgradesToRender = Object.values(upgrades[category]);
+                    upgradesToDisplay = upgrades[category];
                 }
 
-                upgradesToRender.forEach(upgrade => {
-                    const upgradeCard = document.createElement('div');
-                    upgradeCard.classList.add('upgrade-card');
-                    // Add purchased-display class if applicable, regardless of tab
-                    if (upgrade.purchased) {
-                        upgradeCard.classList.add('purchased-display');
-                    }
+                if (Object.keys(upgradesToDisplay).length === 0) {
+                    upgradeGrid.innerHTML = '<p class="no-upgrades-message">No upgrades available in this category or no purchased upgrades yet.</p>';
+                    return;
+                }
 
-                    let buttonHtml = '';
-                    if (category !== 'purchased') { // Only show buy button on non-purchased tabs
-                        // Find the original key for the upgrade object to pass to buyUpgrade
-                        let upgradeKey = null;
-                        for (const key in upgrades[category]) {
-                            if (upgrades[category][key] === upgrade) {
-                                upgradeKey = key;
-                                break;
-                            }
-                        }
-                        buttonHtml = `<button data-upgrade-id="${upgradeKey}" data-upgrade-category="${category}">Buy for <span class="cost">${upgrade.cost}</span> CRPT</button>`;
+                for (const id in upgradesToDisplay) {
+                    const upgradeData = upgradesToDisplay[id];
+                    upgradeGrid.appendChild(createUpgradeCard(id, upgradeData, category));
+                }
+            }
+
+            // Handle purchase logic
+            function handlePurchase(id, category) {
+                const upgrade = upgrades[category][id];
+                if (upgrade && !upgrade.purchased) {
+                    if (cryptoBalance >= upgrade.cost) {
+                        cryptoBalance -= upgrade.cost;
+                        miningRate += upgrade.rateIncrease;
+                        upgrade.purchased = true;
+                        
+                        updateBalanceDisplay();
+                        updateMiningRateDisplay(); // Update mining rate on card if implemented
+
+                        // Animate balance display
+                        balanceDisplay.classList.add('pulsing');
+                        setTimeout(() => {
+                            balanceDisplay.classList.remove('pulsing');
+                        }, 500);
+
+                        showMessage(`Purchased ${upgrade.name}! Mining rate increased by ${upgrade.rateIncrease} CRPT/sec.`, 'success');
+                        playSound('buy', 0.8); // Play purchase sound
+
+                        // Re-render the current tab to update button state
+                        renderUpgrades(currentTab);
+                        saveGame(); // Save game state after purchase
                     } else {
-                        // For "My Upgrades" tab, just show status
-                        buttonHtml = `<button disabled class="purchased">Purchased!</button>`;
+                        showMessage('Not enough CRPT to purchase this upgrade!', 'error');
                     }
-
-                    // Always format rate increase to two decimal places for consistency
-                    const rateDisplay = upgrade.rateIncrease.toFixed(2);
-
-                    upgradeCard.innerHTML = `
-                        <h3>${upgrade.name}</h3>
-                        <p>${upgrade.description}</p>
-                        <p class="upgrade-effect">+${rateDisplay} CRPT/sec</p>
-                        ${buttonHtml}
-                    `;
-                    upgradeGrid.appendChild(upgradeCard);
-                });
-
-                if (category !== 'purchased') {
-                    updateUpgradeButtonStates(); // Update states for newly rendered buttons only on purchase tabs
                 }
             }
 
-            // Function to render upgrades for the current active tab with animation
-            function renderUpgradesForTab(category, immediate = false) {
-                if (!immediate && tabContentWrapper.classList.contains('active-tab-content')) {
-                    // If not immediate and content is currently active, fade out first
-                    tabContentWrapper.classList.remove('active-tab-content');
-                    setTimeout(() => {
-                        _renderContent(category);
-                        tabContentWrapper.classList.add('active-tab-content'); // Fade in new content
-                    }, 400); // This delay should match the CSS transition duration for fade-out
-                } else {
-                    // For initial load or direct updates (e.g., after purchase in 'My Upgrades' tab)
-                    _renderContent(category);
-                    tabContentWrapper.classList.add('active-tab-content'); // Immediately show
-                }
+            // Mining function (runs every second)
+            function mineCrypto() {
+                cryptoBalance += miningRate;
+                updateBalanceDisplay();
+                playSound('mine', 0.1); // Play mining tick sound with low volume
+                saveGame(); // Save game state every tick
             }
 
-            // Function to update the disabled state of upgrade buttons
-            function updateUpgradeButtonStates() {
-                // Select all buttons within the current upgrade grid
-                const currentUpgradeButtons = upgradeGrid.querySelectorAll('button');
-
-                currentUpgradeButtons.forEach(button => {
-                    const upgradeId = button.dataset.upgradeId;
-                    const category = button.dataset.upgradeCategory;
-                    const parentCard = button.closest('.upgrade-card'); // Get the parent card element
-
-                    // Ensure upgrade object exists before trying to access properties
-                    if (upgrades[category] && upgrades[category][upgradeId]) {
-                        const upgrade = upgrades[category][upgradeId];
-
-                        if (upgrade.purchased) {
-                            button.disabled = true;
-                            button.textContent = "Purchased!";
-                            button.style.cursor = 'default';
-                            button.classList.add('purchased'); // Add class for specific styling
-                            if (parentCard) parentCard.classList.add('purchased-display'); // Add class to card
-                        } else if (cryptoBalance < upgrade.cost) {
-                            button.disabled = true;
-                            button.textContent = `Buy for ${upgrade.cost} CRPT`; // Ensure text updates if player spent money elsewhere
-                            button.classList.remove('purchased'); // Ensure class is removed if not purchased
-                            if (parentCard) parentCard.classList.remove('purchased-display'); // Remove class from card
-                        } else {
-                            button.disabled = false;
-                            button.textContent = `Buy for ${upgrade.cost} CRPT`;
-                            button.classList.remove('purchased'); // Ensure class is removed
-                            if (parentCard) parentCard.classList.remove('purchased-display'); // Remove class from card
-                        }
-                    }
-                });
-            }
-
-            // Add event listeners for tab buttons
+            // Tab switching logic
             tabButtons.forEach(button => {
                 button.addEventListener('click', (event) => {
-                    playSound('click', 0.5); // Play click sound
-                    // Remove 'active' class from all tab buttons
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    // Add 'active' class to the clicked button
-                    event.target.classList.add('active');
+                    initAudioContextOnce(); // Initialize audio context on first click
+                    playSound('click', 0.6); // Play click sound
 
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    event.target.classList.add('active');
                     currentTab = event.target.dataset.category;
-                    renderUpgradesForTab(currentTab); // Render upgrades for the selected tab with animation
+
+                    // Trigger fade-out animation
+                    tabContentWrapper.classList.remove('active-tab-content');
+
+                    // After a short delay, switch content and fade in
+                    setTimeout(() => {
+                        renderUpgrades(currentTab);
+                        tabContentWrapper.classList.add('active-tab-content');
+                    }, 200); // Match this delay with the transition duration
                 });
             });
 
-            // Add event listener to the upgrade grid itself (event delegation)
-            upgradeGrid.addEventListener('click', (event) => {
-                if (event.target.tagName === 'BUTTON' && event.target.dataset.upgradeId) {
-                    playSound('click', 0.5); // Play click sound for any purchase attempt
-                    const upgradeId = event.target.dataset.upgradeId;
-                    const category = event.target.dataset.upgradeCategory;
-                    buyUpgrade(upgradeId, category);
+            // Save game state to localStorage
+            function saveGame() {
+                const gameState = {
+                    cryptoBalance: cryptoBalance,
+                    miningRate: miningRate,
+                    upgrades: upgrades
+                };
+                localStorage.setItem('cryptoMiningSimulator', JSON.stringify(gameState));
+            }
+
+            // Load game state from localStorage
+            function loadGame() {
+                const savedState = localStorage.getItem('cryptoMiningSimulator');
+                if (savedState) {
+                    const gameState = JSON.parse(savedState);
+                    cryptoBalance = gameState.cryptoBalance;
+                    miningRate = gameState.miningRate;
+                    
+                    // Deep merge upgrades to handle new upgrades added in future versions
+                    for (const category in gameState.upgrades) {
+                        if (upgrades[category]) {
+                            for (const id in gameState.upgrades[category]) {
+                                if (upgrades[category][id]) {
+                                    upgrades[category][id].purchased = gameState.upgrades[category][id].purchased;
+                                }
+                            }
+                        }
+                    }
+                    console.log("Game loaded:", gameState);
                 }
-            });
+            }
 
-            // Trigger AudioContext initialization on first user interaction with the body
-            // This ensures that audio playback is allowed by browsers (due to autoplay policies)
-            document.body.addEventListener('click', initAudioContextOnce, { once: true });
-            document.body.addEventListener('keydown', initAudioContextOnce, { once: true });
+            // Initial setup
+            loadGame(); // Load game state first
+            updateBalanceDisplay(); // Update balance display immediately
+            updateMiningRateDisplay(); // Update mining rate on card if implemented
 
-            // Start mining interval
+            // Render default tab (GPUs)
+            renderUpgrades(currentTab);
+            // After initial render, activate the content wrapper for the fade-in effect
+            tabContentWrapper.classList.add('active-tab-content');
+
+
+            // Set up game loop
             setInterval(mineCrypto, 1000); // Mine every second
 
-            // Initial display update and render default tab immediately
-            renderUpgradesForTab(currentTab, true);
-            updateDisplay();
+            // Add a global listener to initialize audio context on any user interaction
+            document.body.addEventListener('click', initAudioContextOnce, { once: true });
+            document.body.addEventListener('touchstart', initAudioContextOnce, { once: true });
         });
     </script>
 </body>

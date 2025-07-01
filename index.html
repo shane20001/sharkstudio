@@ -1,958 +1,944 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Letter Pop Game</title>
-<link rel="icon" href="https://media.discordapp.net/attachments/1387428129362149567/1387883560513306736/LetterPopicon.png?ex=685ef6ca&is=685da54a&hm=f8c93e44674c536c9c78759d2214d005e2b441cad1d7af6717343b2875797379&=&format=webp&quality=lossless&width=735&height=735" type="image/png">
-<!-- For Google Sites embedding, CSS and JS are now inline. -->
-<!-- If using external assets (like sounds), replace '/hit.mp3' and '/miss.mp3' in the script below with absolute URLs -->
-<style>
-body {
-margin: 0;
-overflow: hidden;
-background-color: #1a1a1a;
-display: flex;
-justify-content: center;
-align-items: center;
-height: 100vh;
-font-family: 'Comic Sans MS', cursive, sans-serif; /* More cartoon font */
-color: white;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Mining Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300,400,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #0A1C3C; /* Very dark blue */
+            --secondary-bg: #102B50; /* Slightly lighter dark blue for main container */
+            --card-bg: #0C2140; /* Even darker blue for upgrade cards */
+            --text-color: #E0E0E0; /* Light gray */
+            --accent-color: #4CAFEE; /* Bright sky blue for "Crypto" part of title/highlights */
+            --button-gradient-start: #81C784; /* Softer green */
+            --button-gradient-end: #4CAF50; /* Darker green */
+            --shadow-color: rgba(0, 0, 0, 0.25); /* Softer shadow color */
+            --border-radius: 10px; /* Slightly larger border radius */
+            --padding-base: 25px; /* Slightly more padding */
+            --success-color: #66BB6A; /* Softer green for positive effects */
+            --purchased-color: #263238; /* Darker gray/blue for purchased button state */
+            --card-gradient-start: #1A3A60; /* Darker blue for card base */
+            --card-gradient-end: #0A1C3C; /* Even darker blue for card end */
+            --tab-inactive-bg: #1A3A60; /* Dark blue */
+            --tab-active-bg: var(--accent-color); /* Light blue */
+            --tab-hover-bg: #64B5F6; /* Lighter blue for hover */
+        }
 
-/* Menu Container styles */
-#menu-container {
-position: fixed; /* Covers the whole viewport */
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: #1a1a1a; /* Covers the game area background */
-z-index: 20; /* Make sure it's above game area */
-/* Initial state: visible */
-opacity: 1;
-visibility: visible;
-pointer-events: auto; /* Allow interaction with menu buttons */
-transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
-display: flex; /* To center screen content */
-justify-content: center;
-align-items: center;
-perspective: 1000px; /* For 3D transforms */
-/* Add background image for the menu container */
-background-image: url('https://s3.amazonaws.com/gameartpartnersimagehost/wp-content/uploads/2018/03/Game_Background_189.png');
-background-size: cover;
-background-position: center;
-}
+        body {
+            font-family: 'Open Sans', sans-serif; /* Changed to Open Sans for general text */
+            margin: 0;
+            padding: 0;
+            background: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Center vertically as well */
+            min-height: 100vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+            position: relative; /* For pseudo-element background */
+            z-index: 1; /* Ensure content is above background */
+        }
 
-#menu-container.hidden {
-opacity: 0;
-visibility: hidden;
-pointer-events: none; /* Prevent interaction when hidden */
-/* Optional: add a slight rotate/translate effect on hide */
-transform: rotateY(10deg) translateX(-100%);
-}
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Linear gradient from the reference image */
+            background: linear-gradient(135deg, var(--primary-bg) 0%, #1A3A60 100%);
+            background-size: cover; /* Cover the entire area */
+            animation: none; /* Remove subtleShift animation */
+            z-index: -1; /* Place behind content */
+        }
 
-/* Screen styles within menu-container */
-/* Applying .screen styles to #game-end-screen as well for consistency */
-.screen {
-position: absolute; /* Position within menu-container or game-area */
-width: 100%;
-height: 100%;
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-opacity: 0;
-visibility: hidden;
-pointer-events: none; /* By default, not interactive */
-transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out, transform 0.5s ease-in-out; /* Add transform transition */
-transform: rotateY(-10deg); /* Initial state off-screen */
-/* Ensure screens inside game-area don't interfere until active */
-z-index: 5; /* Below score */
-}
+        /* Removed @keyframes subtleShift as it's no longer used */
 
-/* Active screen styles */
-.screen.active {
-opacity: 1;
-visibility: visible;
-pointer-events: auto; /* Only the active screen is interactive */
-transform: rotateY(0deg); /* Active state center */
-z-index: 15; /* Above game elements when active */
-}
+        .game-container {
+            background-color: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px var(--shadow-color); /* Softer, less prominent shadow */
+            padding: var(--padding-base);
+            margin: 30px; /* More margin */
+            max-width: 950px; /* Slightly wider */
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: var(--padding-base);
+            border: 1px solid rgba(76, 175, 238, 0.2); /* Subtle border using accent color */
+        }
 
-/* Style for title and difficulty headings */
-#title-screen h1, #difficulty-screen h2 {
-margin-bottom: 40px;
-font-size: 60px; /* Larger title */
-text-shadow: 0 0 20px rgba(70, 130, 180, 0.9), 0 0 5px rgba(70, 130, 180, 0.5); /* More intense glow */
-letter-spacing: 3px;
-color: #ffeb3b; /* Bright yellow */
-text-shadow: 5px 5px 0px #f44336, 10px 10px 0px #2196f3; /* 3D pop-out effect */
-}
+        header {
+            text-align: center;
+            padding-bottom: 20px; /* More padding */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Lighter, subtle border */
+        }
 
-/* Add styling for the game icon */
-#game-icon {
-width: 300px; /* Adjust size as needed */
-height: 300px;
-margin-bottom: 20px; /* Space between icon and title */
-/* Removed border-radius and box-shadow to make it normal */
-border-radius: 0;
-box-shadow: none;
-}
+        h1 {
+            color: var(--text-color); /* Default color for h1 part */
+            margin-bottom: 8px; /* More margin */
+            font-weight: 700;
+            /* Removed text-shadow for flatter look */
+            font-family: 'Montserrat', sans-serif; /* Apply Montserrat for titles */
+            font-size: 2.5em; /* Make it larger */
+        }
 
-/* Game End Screen specific styles */
-#game-end-screen, #pause-screen {
-background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent overlay */
-z-index: 15; /* Ensure it's above circles */
-}
+        .crypto-title-part {
+            color: var(--accent-color); /* Bright blue for "Crypto" */
+        }
 
-#game-end-screen h2, #pause-screen h2 {
-font-size: 50px;
-margin-bottom: 20px;
-text-shadow: 0 0 15px rgba(70, 130, 180, 0.8);
-color: #4CAF50; /* Green for success */
-}
+        .mining-title-part {
+            color: var(--text-color); /* White for "Mining Simulator" */
+        }
 
-#game-end-screen p {
-font-size: 36px;
-margin-bottom: 30px;
-text-shadow: 0 0 10px rgba(70, 130, 180, 0.6);
-}
+        .tagline {
+            font-size: 1.1em; /* Slightly larger */
+            color: #a0a0a0;
+            font-weight: 400; /* Less bold */
+        }
 
-/* Button styles */
-button {
-padding: 12px 25px; /* More padding */
-font-size: 22px; /* Slightly larger font */
-cursor: pointer;
-margin: 10px;
-border: 3px solid #2a4c6a; /* Darker border for cartoon look */
-border-radius: 8px; /* Rounder corners */
-background-color: #6495ed; /* CornflowerBlue - slightly brighter */
-color: white;
-text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-box-shadow: 3px 3px 8px rgba(0,0,0,0.4); /* Add button shadow */
-transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-position: relative; /* For pseudo-elements */
-overflow: hidden; /* For ripple effect */
-}
+        /* Updated mining-stats section to only contain the crypto card */
+        .mining-stats {
+            display: flex;
+            justify-content: center; /* Center the single crypto card */
+            align-items: flex-start;
+            padding: 10px 0; /* Just some vertical padding */
+            /* Removed background, padding, shadow, border to avoid redundancy with crypto-card's strong styling */
+            gap: 0; /* No gap needed if only one item */
+        }
 
-button:hover {
-background-color: #7ab8f0; /* Lighter on hover */
-border-color: #3b6b90;
-box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-transform: translateY(-2px); /* Lift effect */
-}
+        .stat-item {
+            text-align: center;
+            /* Flex properties handled by parent containers where appropriate */
+            padding: 10px 5px; /* Keep individual item padding for consistency if they're used outside flex */
+            box-sizing: border-box;
+        }
 
-button:active {
-transform: scale(0.95); /* More pronounced press */
-box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
-background-color: #5a8be0; /* Slightly darker when pressed */
-border-color: #2a4c6a;
-}
+        /* Crypto Card Specific Styling */
+        #crypto-card {
+            background: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
+            color: white;
+            padding: 30px 35px; /* Increased padding for less squished look */
+            border-radius: 10px; /* Slightly less rounded for flatter look */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Softer shadow for card */
+            flex-basis: 380px; /* Slightly wider for less squished look */
+            height: 250px; /* Increased height for less squished look */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start; /* Align contents to start */
+            text-align: left; /* Align text within card to left */
+            flex-grow: 0; /* Prevent it from growing too much */
+            flex-shrink: 0; /* Prevent it from shrinking too much */
+            overflow: hidden; /* Ensure chip doesn't overflow */
+        }
 
-/* Ripple effect for buttons */
-button::after {
-content: '';
-position: absolute;
-border-radius: 50%;
-background-color: rgba(255, 255, 255, 0.7);
-width: 100px;
-height: 100px;
-margin-top: -50px;
-margin-left: -50px;
-opacity: 0;
-transition: all 0.7s ease-out;
-transform: scale(0);
-pointer-events: none;
-}
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+            margin-bottom: 10px; /* Tighter margin */
+        }
 
-button:active::after {
-transform: scale(2);
-opacity: 1;
-transition: 0s;
-}
+        .card-brand {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600; /* Slightly less bold for brand */
+            font-size: 1.1em;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+        }
 
-/* Difficulty Selector styles */
-.difficulty-selector {
-display: flex;
-align-items: center;
-font-size: 36px; /* Larger text */
-margin-bottom: 30px;
-text-shadow: 0 0 10px rgba(70, 130, 180, 0.7), 0 0 3px rgba(70, 130, 180, 0.3);
-}
+        .card-logo {
+            font-family: 'Roboto', sans-serif; /* Keep Roboto for card details */
+            font-weight: 700;
+            font-size: 1.2em; /* Smaller, as brand is separate */
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: none; /* Remove glow effect */
+            display: flex; /* To align text and icon */
+            align-items: center;
+        }
 
-.difficulty-selector button {
-font-size: 36px; /* Match text size */
-padding: 5px 18px; /* Adjust padding */
-margin: 0 20px; /* More space */
-}
+        /* Coin icon styling */
+        .coin-icon {
+            height: 22px; /* Slightly smaller for card header icon */
+            vertical-align: middle;
+            margin-left: 8px; /* Space between text and icon */
+            filter: none; /* Remove glow */
+        }
 
-#difficulty-text {
-min-width: 200px; /* Ensure consistent width */
-text-align: center;
-font-weight: bold;
-/* Add transition for smooth text change animation */
-transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-}
+        .card-number {
+            font-family: 'Roboto Mono', monospace; /* Use a monospace font for card number */
+            font-size: 1.6em; /* Slightly larger for less squished look */
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+        }
 
-#difficulty-text.text-changing {
-opacity: 0;
-transform: scale(0.9);
-}
+        .card-number span {
+            margin-right: 5px; /* Space between groups of numbers */
+        }
 
-/* Game Area styles */
-#game-area {
-width: 800px;
-height: 600px;
-border: 4px solid #6495ed; /* Cartoon border */
-position: relative;
-overflow: hidden;
-background-color: #333; /* Slightly lighter background */
-box-shadow: 0 0 20px rgba(0,0,0,0.5);
-border-radius: 10px; /* Slightly rounded corners */
-pointer-events: none; /* Initially non-interactive */
-/* Default background for game area - will be overridden by difficulty */
-background-image: linear-gradient(45deg, #4CAF50 5%, #8BC34A 95%); /* Greenish gradient */
-background-size: cover;
-background-position: center;
-transition: background-image 0.5s ease-in-out; /* Smooth transition for background */
-}
+        .card-number .last-digits {
+            font-weight: bold;
+        }
 
-/* When menu-container is hidden, make game-area interactive */
-.active-game { /* Using a class applied by JS instead of + selector for clarity */
-pointer-events: auto;
-}
+        /* New container for balance and mining rate */
+        .card-balance-info {
+            width: 100%;
+            margin-top: auto; /* Push to bottom, above footer */
+            text-align: left;
+            margin-bottom: 15px; /* Space between info and footer */
+        }
 
-#score {
-position: absolute;
-top: 15px; /* Slightly more space */
-left: 15px;
-font-size: 28px; /* Larger score */
-z-index: 10;
-text-shadow: 2px 2px 3px rgba(0,0,0,0.5);
-color: #f0f0f0;
-}
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            width: 100%;
+        }
 
-/* In-game quit button */
-#in-game-quit-button {
-position: absolute;
-top: 15px;
-right: 15px;
-padding: 8px 15px;
-font-size: 18px;
-z-index: 10;
-background-color: #f44336; /* Red color for quit */
-border-color: #c62828;
-box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-display: none; /* Initially hidden */
-}
+        #crypto-card .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85em;
+            margin-bottom: 2px;
+            font-weight: 600; /* Slightly bolder */
+        }
 
-/* Quit button out of game area */
-#global-quit-button {
-position: fixed; /* Fixed position relative to viewport */
-bottom: 20px;
-right: 20px;
-padding: 10px 20px;
-font-size: 20px;
-background-color: #f44336; /* Red color for quit */
-border-color: #c62828;
-z-index: 30; /* Ensure it's above everything else */
-display: none; /* Initially hidden, shown when game starts */
-}
+        #crypto-card .stat-value {
+            font-size: 2.8em; /* Larger balance display for less squished look */
+            color: var(--text-color);
+            text-shadow: none; /* Remove initial shadow */
+            letter-spacing: 1px;
+            white-space: nowrap; /* Prevent wrapping */
+            transition: font-size 0.2s ease-out; /* Add transition for smooth font size changes */
+        }
 
-/* Circle styles */
-.circle {
-position: absolute;
-width: 60px;
-height: 60px;
-border-radius: 50%;
-background-color: #4682b4; /* SteelBlue - Base color */
-display: flex;
-justify-content: center;
-align-items: center;
-font-size: 30px;
-color: white;
-cursor: pointer;
-user-select: none;
-/* Updated transitions for smoother movement and effects */
-transition: transform 0.5s ease-out, opacity 0.5s ease-out, background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-box-shadow: 0 0 12px rgba(70, 130, 180, 0.7); /* Base glow */
-border: 3px solid rgba(255, 255, 255, 0.5); /* Subtle white outline */
-will-change: transform, opacity;
-opacity: 0; /* Start hidden for animate-in */
-transform: scale(0.5); /* Start small for animate-in */
-animation: bounce 0.8s infinite alternate ease-in-out; /* Continuous subtle bounce */
-}
+        /* New classes for dynamic font sizing */
+        #crypto-card .stat-value.balance-small-font {
+            font-size: 2.2em; /* Smaller for larger numbers */
+        }
 
-/* Animation for circle appearing */
-.circle.animate-in {
-opacity: 1;
-transform: scale(1);
-transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.3s ease-out; /* Bouncy scale-in */
-}
+        #crypto-card .stat-value.balance-smaller-font {
+            font-size: 1.7em; /* Even smaller */
+        }
 
-.circle.fading {
-background-color: #ff4500; /* OrangeRed - Warning color */
-box-shadow: 0 0 15px rgba(255, 69, 0, 0.8); /* Orange glow */
-border-color: rgba(255, 255, 255, 0.7);
-/* Opacity fading handled by transition on the 'fading' state */
-opacity: 0.3; /* Target opacity when fading */
-animation: pulse 1s infinite; /* Pulsing effect when fading */
-}
+        #crypto-card .stat-value.balance-smallest-font {
+            font-size: 1.3em; /* Smallest for very large numbers */
+        }
 
-.circle.miss {
-background-color: #ff0000; /* Red */
-opacity: 0; /* Fades to 0 */
-transform: scale(1.2); /* Expands slightly on miss */
-box-shadow: 0 0 20px rgba(255, 0, 0, 1); /* Intense red glow */
-border-color: white;
-transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease-out; /* Bouncy scale and fade */
-animation: explode 0.5s forwards; /* Explode effect */
-}
+        #crypto-card .stat-value.pulsing {
+            animation: pulseGlowCard 0.5s ease-out forwards;
+        }
 
-.circle.hit {
-background-color: #32cd32; /* LimeGreen */
-opacity: 0; /* Fades to 0 */
-transform: scale(0.7); /* Shrinks slightly on hit */
-box-shadow: 0 0 20px rgba(50, 205, 50, 1); /* Intense green glow */
-border-color: white;
-transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease-out; /* Bouncy scale and fade */
-animation: pop 0.5s forwards; /* Pop effect */
-}
+        @keyframes pulseGlowCard {
+            0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0); }
+            50% { text-shadow: 0 0 15px rgba(76, 175, 238, 0.8); } /* Blue glow */
+            100% { text-shadow: 0 0 5px rgba(255, 255, 255, 0); }
+        }
 
-/* Keyframe animations */
-@keyframes bounce {
-from { transform: translateY(0); }
-to { transform: translateY(-5px); }
-}
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.8em; /* Slightly larger for less squished look */
+            color: rgba(255, 255, 255, 0.6);
+        }
 
-@keyframes pulse {
-0% { box-shadow: 0 0 15px rgba(255, 69, 0, 0.8); }
-50% { box-shadow: 0 0 25px rgba(255, 69, 0, 1); }
-100% { box-shadow: 0 0 15px rgba(255, 69, 0, 0.8); }
-}
+        .card-holder {
+            font-weight: 500;
+            text-transform: uppercase;
+        }
 
-@keyframes explode {
-0% { transform: scale(1); opacity: 1; background-color: #ff0000; }
-50% { transform: scale(1.5); opacity: 0.5; background-color: #ff0000; }
-100% { transform: scale(0); opacity: 0; background-color: #ff0000; }
-}
+        .card-valid-thru {
+            font-weight: 500;
+        }
 
-@keyframes pop {
-0% { transform: scale(1); opacity: 1; background-color: #32cd32; }
-50% { transform: scale(1.2); opacity: 0.5; background-color: #32cd32; }
-100% { transform: scale(0); opacity: 0; background-color: #32cd32; }
-}
+        h2 {
+            text-align: center;
+            margin-top: 15px; /* More margin */
+            color: var(--text-color); /* Changed to text color for consistency */
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2em;
+        }
 
-/* Version text */
-#version-text {
-position: fixed;
-bottom: 10px;
-right: 10px;
-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
-font-size: 14px;
-font-family: sans-serif;
-z-index: 40; /* Above all other UI elements */
-user-select: none; /* Prevent selection */
-}
-</style>
+        /* Tab Navigation Styling */
+        .tab-navigation {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .tab-button {
+            background-color: var(--tab-inactive-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: var(--tab-hover-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(76, 175, 238, 0.25); /* Softer blue shadow on hover */
+        }
+
+        .tab-button.active {
+            background-color: var(--tab-active-bg);
+            font-weight: 700;
+            box-shadow: 0 3px 8px rgba(76, 175, 238, 0.4); /* Softer blue glow for active tab */
+        }
+
+        /* Tab Content Wrapper for Animations */
+        .tab-content-wrapper {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+
+        .tab-content-wrapper.active-tab-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .upgrade-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .upgrade-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: calc(var(--padding-base) / 1.2); /* More padding */
+            box-shadow: 0 6px 18px var(--shadow-color); /* Softer shadow */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px; /* Taller cards */
+            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle border */
+        }
+
+        .upgrade-card:hover {
+            transform: translateY(-5px); /* Lift more on hover */
+            box-shadow: 0 8px 20px rgba(76, 175, 238, 0.4); /* Softer accent color glow */
+        }
+
+        .upgrade-card.purchased-display {
+            border: 1px solid var(--success-color); /* Green border for purchased items */
+            box-shadow: 0 8px 20px rgba(102, 187, 106, 0.3); /* Green shadow */
+            cursor: default;
+            transform: none; /* No lift on hover for purchased display */
+            opacity: 0.8; /* Slight opacity reduction for purchased */
+            filter: grayscale(20%); /* Desaturate slightly */
+        }
+
+        .upgrade-card.purchased-display:hover {
+            transform: none;
+            box-shadow: 0 8px 20px rgba(102, 187, 106, 0.3); /* Maintain green shadow */
+        }
+
+        .upgrade-card h3 {
+            margin-top: 5px;
+            color: var(--text-color);
+            font-weight: 600; /* Slightly bolder */
+            font-size: 1.3em;
+        }
+
+        .upgrade-card p {
+            font-size: 1em; /* Slightly larger */
+            color: #c0c0c0;
+            flex-grow: 1;
+            margin-bottom: 10px;
+        }
+
+        .upgrade-effect {
+            font-weight: 700;
+            color: var(--accent-color); /* Use accent color */
+            margin-bottom: 15px; /* More margin */
+            font-size: 1.1em;
+        }
+
+        .upgrade-card button {
+            background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
+            color: #212121; /* Darker text for better contrast on orange/gold */
+            border: none;
+            padding: 14px 25px; /* Larger padding */
+            border-radius: 7px; /* Slightly more rounded buttons */
+            font-size: 1.2em; /* Larger font */
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+            margin-top: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Button shadow */
+        }
+
+        .upgrade-card button:hover:not(:disabled) {
+            transform: translateY(-3px); /* Lift more */
+            box-shadow: 0 6px 18px rgba(129, 199, 132, 0.4); /* Softer green glow on button hover */
+        }
+
+        .upgrade-card button:disabled {
+            background: var(--purchased-color); /* Greyer for disabled */
+            cursor: not-allowed;
+            opacity: 0.7; /* Slightly less opaque */
+            box-shadow: none;
+            transform: none;
+        }
+
+        .upgrade-card button:disabled.purchased {
+            background: var(--purchased-color);
+            cursor: default;
+            opacity: 1; /* Keep full opacity for purchased */
+            color: #b0b0b0; /* Lighter text for purchased */
+            font-weight: 500;
+        }
+
+        .upgrade-card .cost {
+            font-weight: bold;
+        }
+
+        .no-upgrades-message {
+            text-align: center;
+            font-size: 1.2em;
+            color: #a0a0a0;
+            padding: 50px 20px;
+            grid-column: 1 / -1; /* Make it span all columns */
+        }
+
+        /* Styles for the message area */
+        #message-area {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px); /* Initial position slightly above, for fade-in effect */
+            background-color: rgba(0, 128, 0, 0.9); /* Default success green */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            pointer-events: none; /* Allow clicks to pass through */
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 44px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        #message-area.error {
+            background-color: rgba(200, 0, 0, 0.9); /* Error red */
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                margin: 20px;
+                padding: 20px;
+            }
+
+            .upgrade-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+
+            #crypto-card {
+                flex-basis: auto; /* Allow card to resize */
+                width: 100%; /* Take full width on smaller screens */
+                height: auto; /* Auto height */
+            }
+
+            .tab-button {
+                font-size: 1em;
+                padding: 10px 15px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                margin: 10px;
+                padding: 15px;
+            }
+
+            .mining-stats {
+                flex-direction: column; /* Keep column for consistency if other items added later */
+                gap: 20px;
+            }
+
+            .upgrade-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .upgrade-card button {
+                padding: 12px 20px;
+                font-size: 1.1em;
+            }
+
+            #crypto-card .stat-value {
+                font-size: 2.2em; /* Adjusted for smaller screens */
+            }
+
+            /* Further dynamic font sizing adjustments for smaller screens */
+            #crypto-card .stat-value.balance-small-font {
+                font-size: 1.8em; /* Adjusted for smaller base */
+            }
+            #crypto-card .stat-value.balance-smaller-font {
+                font-size: 1.4em; /* Adjusted for smaller base */
+            }
+            #crypto-card .stat-value.balance-smallest-font {
+                font-size: 1.1em; /* Adjusted for smaller base */
+            }
+
+            .card-number {
+                font-size: 1.3em; /* Adjusted for smaller screens */
+            }
+
+            h1 {
+                font-size: 2em; /* Adjusted for smaller screens */
+            }
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                
+            }
+        }
+    </script>
 </head>
 <body>
-<!-- Menu Container (Initially visible, covers game area) -->
-<div id="menu-container">
-<!-- Title Screen -->
-<div id="title-screen" class="screen active">
-<img id="game-icon" src="https://media.discordapp.net/attachments/1387428129362149567/1387883560513306736/LetterPopicon.png?ex=685ef6ca&is=685da54a&hm=f8c93e44674c536c9c78759d2214d005e2b441cad1d7af6717343b2875797379&=&format=webp&quality=lossless&width=735&height=735" alt="Letter Pop Icon">
-
-<button id="play-button">Play</button>
-</div>
-
-<!-- Difficulty Selection Screen -->
-<div id="difficulty-screen" class="screen">
-<h2>Select Difficulty</h2>
-<div class="difficulty-selector">
-<button id="left-arrow">&lt;</button>
-<span id="difficulty-text">Normal</span>
-<button id="right-arrow">&gt;</button>
-</div>
-<button id="select-button">Select</button>
-</div>
-</div>
-
-<!-- Game Area (Initially hidden/non-interactive by menu-container) -->
-<div id="game-area">
-<div id="score">Score: 0</div>
-<!-- Pause Screen -->
-<div id="pause-screen" class="screen">
-<h2>Paused</h2>
-<button id="resume-button">Resume</button>
-<button id="quit-button">Quit Game</button>
-</div>
-<!-- Game Over/End Screen -->
-<div id="game-end-screen" class="screen">
-<h2 id="end-message">Game Over!</h2>
-<p id="final-score">Final Score: 0</p>
-<button id="play-again-button">Play Again</button>
-<button id="main-menu-button">Main Menu</button>
-</div>
-</div>
-
-<!-- Global Quit Button (Outside game-area for persistent display) -->
-<button id="global-quit-button">Quit</button>
-
-<!-- Version Text -->
-<div id="version-text">V2.2</div>
-
-<script>
-class AudioManager {
-constructor() {
-this.audioContext = null;
-this.hitBuffer = null;
-this.missBuffer = null;
-this.audioInitialized = false;
-}
-
-async initAudio() {
-if (this.audioInitialized) return;
-this.audioInitialized = true;
-try {
-this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-if (this.audioContext.state === 'suspended') {
-console.log("AudioContext suspended, attempting to resume...");
-await this.audioContext.resume();
-console.log("AudioContext resumed.");
-}
-
-if (this.audioContext.state === 'running') {
-this.hitBuffer = await this.loadSound('/hit.mp3');
-this.missBuffer = await this.loadSound('/miss.mp3');
-} else {
-console.warn("AudioContext did not resume, sounds might not load.");
-}
-
-} catch (e) {
-console.error("Error initializing AudioContext:", e);
-this.audioContext = null;
-}
-}
-
-async loadSound(url) {
-if (!this.audioContext) {
-console.error("AudioContext not initialized.");
-return null;
-}
-try {
-const response = await fetch(url);
-const arrayBuffer = await response.arrayBuffer();
-return await this.audioContext.decodeAudioData(arrayBuffer);
-} catch (e) {
-console.error("Error loading sound:", url, e);
-return null;
-}
-}
-
-playSound(buffer) {
-if (!buffer || !this.audioContext || this.audioContext.state !== 'running') {
-return;
-}
-try {
-const source = this.audioContext.createBufferSource();
-source.buffer = buffer;
-source.connect(this.audioContext.destination);
-source.start(0);
-} catch (e) {
-console.error("Error playing sound:", e);
-}
-}
-}
-
-class UIManager {
-constructor(menuContainer, titleScreen, difficultyScreen, gameEndScreen, pauseScreen,
-difficultyTextElement, endMessageElement, finalScoreElement,
-gameArea, globalQuitButton) {
-this.menuContainer = menuContainer;
-this.titleScreen = titleScreen;
-this.difficultyScreen = difficultyScreen;
-this.gameEndScreen = gameEndScreen;
-this.pauseScreen = pauseScreen;
-this.difficultyTextElement = difficultyTextElement;
-this.endMessageElement = endMessageElement;
-this.finalScoreElement = finalScoreElement;
-this.gameArea = gameArea;
-this.globalQuitButton = globalQuitButton;
-}
-
-showScreen(screenElement) {
-// Hide all screens within menu-container and game-area first
-[this.titleScreen, this.difficultyScreen, this.gameEndScreen, this.pauseScreen].forEach(screen => {
-screen.classList.remove('active');
-});
-
-if (screenElement === this.titleScreen || screenElement === this.difficultyScreen) {
-this.showMenuContainer();
-} else {
-this.hideMenuContainer();
-}
-
-screenElement.classList.add('active');
-}
-
-hideScreen(screenElement) {
-screenElement.classList.remove('active');
-}
-
-hideMenuContainer() {
-this.menuContainer.classList.add('hidden');
-this.gameArea.classList.add('active-game');
-this.showGlobalQuitButton();
-}
-
-showMenuContainer() {
-this.menuContainer.classList.remove('hidden');
-this.gameArea.classList.remove('active-game');
-this.hideGlobalQuitButton();
-}
-
-showGlobalQuitButton() {
-this.globalQuitButton.style.display = 'block';
-}
-
-hideGlobalQuitButton() {
-this.globalQuitButton.style.display = 'none';
-}
-
-showEndScreen(message, score) {
-this.endMessageElement.textContent = message;
-this.finalScoreElement.textContent = `Final Score: ${score}`;
-this.showScreen(this.gameEndScreen);
-}
-
-updateDifficultyText(text, animate = true) {
-if (!animate) {
-this.difficultyTextElement.textContent = text;
-return;
-}
-
-this.difficultyTextElement.classList.add('text-changing');
-const transitionDurationMs = 300;
-
-setTimeout(() => {
-this.difficultyTextElement.textContent = text;
-this.difficultyTextElement.classList.remove('text-changing');
-}, transitionDurationMs / 2);
-}
-
-initializeMenu(initialDifficultyText) {
-this.showMenuContainer();
-this.showScreen(this.titleScreen);
-this.hideGlobalQuitButton();
-this.updateDifficultyText(initialDifficultyText, false);
-}
-}
-
-class Game {
-constructor(scoreElement, gameArea, audioManager, uiManager, difficulties) {
-this.scoreElement = scoreElement;
-this.gameArea = gameArea;
-this.audioManager = audioManager;
-this.uiManager = uiManager;
-this.difficulties = difficulties;
-
-this.score = 0;
-this.activeCircles = [];
-this.isGameRunning = false;
-this.isGamePaused = false;
-this.lastCircleTime = 0;
-this.clearedCirclesCount = 0;
-this.animationFrameId = null;
-
-// Difficulty settings
-this.difficultySettings = {
-Easy: {
-lifespan: 3000,
-interval: 1500,
-fadeStart: 2500,
-circlesToClear: 20,
-background: 'url("https://st2.depositphotos.com/3759469/6798/v/450/depositphotos_67982979-stock-illustration-horizontally-seamless-game-background.jpg")'
-},
-Normal: {
-lifespan: 2000,
-interval: 1000,
-fadeStart: 1500,
-circlesToClear: 30,
-background: 'url("https://cdn.gamedevmarket.net/wp-content/uploads/20191203174021/2028097cdc8bca296bd7ebd978871589.jpg")'
-},
-Hard: {
-lifespan: 1200,
-interval: 700,
-fadeStart: 800,
-circlesToClear: 40,
-background: 'url("https://img.freepik.com/premium-photo/dark-room-with-red-lights-black-background_860528-232.jpg")'
-}
-};
-this.currentDifficultyIndex = 1; // Default to Normal
-this.selectedDifficulty = this.difficulties[this.currentDifficultyIndex];
-
-// Parameters updated by difficulty
-this.currentLifespan = 0;
-this.currentMinInterval = 0;
-this.currentFadeStart = 0;
-this.currentCirclesToClear = 0;
-this.currentBackground = '';
-}
-
-getRandomLetter() {
-const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-return alphabet[Math.floor(Math.random() * alphabet.length)];
-}
-
-createCircle() {
-if (!this.isGameRunning || this.isGamePaused || this.clearedCirclesCount >= this.currentCirclesToClear) {
-return;
-}
-
-const letter = this.getRandomLetter();
-const circle = document.createElement('div');
-circle.classList.add('circle');
-circle.textContent = letter;
-
-const gameAreaRect = this.gameArea.getBoundingClientRect();
-const circleSize = 60;
-
-const maxX = gameAreaRect.width - circleSize;
-const maxY = gameAreaRect.height - circleSize;
-
-const randomX = Math.random() * maxX;
-const randomY = Math.random() * maxY;
-
-circle.style.left = `${randomX}px`;
-circle.style.top = `${randomY}px`;
-
-circle.id = `circle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const creationTime = performance.now();
-
-this.gameArea.appendChild(circle);
-
-this.activeCircles.push({
-id: circle.id,
-element: circle,
-letter: letter,
-creationTime: creationTime,
-lifespan: this.currentLifespan,
-fadeStart: this.currentFadeStart
-});
-
-requestAnimationFrame(() => {
-circle.classList.add('animate-in');
-});
-}
-
-updateCircles(currentTime) {
-const elementsToRemove = this.gameArea.querySelectorAll('.circle.hit, .circle.miss');
-elementsToRemove.forEach(el => {
-const isInActiveList = this.activeCircles.some(circle => circle.id === el.id);
-if (!isInActiveList) {
-el.remove();
-}
-});
-
-for (let i = this.activeCircles.length - 1; i >= 0; i--) {
-const circleData = this.activeCircles[i];
-const element = circleData.element;
-const elapsed = currentTime - circleData.creationTime;
-const timeLeft = circleData.lifespan - elapsed;
-
-if (elapsed >= circleData.fadeStart) {
-if (!element.classList.contains('fading') && !element.classList.contains('hit') && !element.classList.contains('miss')) {
-element.classList.add('fading');
-}
-} else {
-if (element.classList.contains('fading')) {
-element.classList.remove('fading');
-}
-}
-
-if (timeLeft <= 0) {
-if (!element.classList.contains('hit') && !element.classList.contains('miss')) {
-element.classList.add('miss');
-this.audioManager.playSound(this.audioManager.missBuffer);
-setTimeout(() => {
-element.remove();
-}, 500);
-}
-this.activeCircles.splice(i, 1);
-}
-}
-}
-
-handleKeyDown(event) {
-const pressedKey = event.key.toUpperCase();
-const matchedIndex = this.activeCircles.findIndex(circle => circle.letter === pressedKey);
-
-if (matchedIndex !== -1) {
-const circleData = this.activeCircles[matchedIndex];
-const element = circleData.element;
-
-if (element.classList.contains('hit') || element.classList.contains('miss')) {
-return;
-}
-
-element.classList.add('hit');
-this.audioManager.playSound(this.audioManager.hitBuffer);
-
-this.score += 10;
-this.scoreElement.textContent = `Score: ${this.score}`;
-this.clearedCirclesCount++;
-
-this.activeCircles.splice(matchedIndex, 1);
-
-setTimeout(() => {
-element.remove();
-}, 500);
-
-if (this.clearedCirclesCount >= this.currentCirclesToClear) {
-this.endGame("Game Complete!");
-}
-
-} else {
-if (pressedKey.length === 1 && pressedKey >= 'A' && pressedKey <= 'Z') {
-this.score = Math.max(0, this.score - 5);
-this.scoreElement.textContent = `Score: ${this.score}`;
-}
-}
-}
-
-gameLoop = (currentTime) => {
-if (!this.isGameRunning) {
-console.log("Game loop stopping.");
-this.animationFrameId = null;
-return;
-}
-
-if (this.isGamePaused) {
-this.animationFrameId = requestAnimationFrame(this.gameLoop);
-return;
-}
-
-const jitter = Math.random() * 200 - 100;
-if (this.clearedCirclesCount + this.activeCircles.length < this.currentCirclesToClear + 5) {
-if (currentTime - this.lastCircleTime > this.currentMinInterval + jitter) {
-this.createCircle();
-this.lastCircleTime = currentTime;
-}
-}
-
-this.updateCircles(currentTime);
-
-this.animationFrameId = requestAnimationFrame(this.gameLoop);
-}
-
-applyDifficultySettings(difficultyName) {
-const settings = this.difficultySettings[difficultyName];
-if (settings) {
-this.currentLifespan = settings.lifespan;
-this.currentMinInterval = settings.interval;
-this.currentFadeStart = settings.fadeStart;
-this.currentCirclesToClear = settings.circlesToClear;
-this.currentBackground = settings.background;
-this.gameArea.style.backgroundImage = this.currentBackground;
-console.log(`Applied difficulty: ${difficultyName}`, { lifespan: this.currentLifespan, interval: this.currentMinInterval, fadeStart: this.currentFadeStart, circlesToClear: this.currentCirclesToClear, background: this.currentBackground });
-} else {
-console.error(`Difficulty settings not found for: ${difficultyName}`);
-this.applyDifficultySettings('Normal');
-}
-}
-
-startGameLoop() {
-if (this.isGameRunning) return;
-
-this.isGameRunning = true;
-this.isGamePaused = false;
-this.score = 0;
-this.clearedCirclesCount = 0;
-this.activeCircles.length = 0;
-
-this.gameArea.querySelectorAll('.circle').forEach(c => c.remove());
-
-this.scoreElement.textContent = `Score: ${this.score}`;
-this.lastCircleTime = performance.now();
-
-this.applyDifficultySettings(this.selectedDifficulty);
-
-console.log("Starting game loop...");
-this.animationFrameId = requestAnimationFrame(this.gameLoop);
-this.uiManager.showGlobalQuitButton();
-}
-
-pauseGame() {
-if (!this.isGameRunning || this.isGamePaused) return;
-this.isGamePaused = true;
-console.log("Game paused.");
-this.uiManager.showScreen(this.uiManager.pauseScreen);
-}
-
-resumeGame() {
-if (!this.isGameRunning || !this.isGamePaused) return;
-this.isGamePaused = false;
-console.log("Game resumed.");
-this.uiManager.hideScreen(this.uiManager.pauseScreen);
-if (!this.animationFrameId) {
-this.animationFrameId = requestAnimationFrame(this.gameLoop);
-}
-}
-
-endGame(message = "Game Over!") {
-if (!this.isGameRunning && this.animationFrameId === null) return;
-this.isGameRunning = false;
-this.isGamePaused = false;
-console.log("Game ended.");
-
-if (this.animationFrameId) {
-cancelAnimationFrame(this.animationFrameId);
-this.animationFrameId = null;
-}
-
-this.uiManager.showEndScreen(message, this.score);
-this.uiManager.hideGlobalQuitButton();
-
-setTimeout(() => {
-this.gameArea.querySelectorAll('.circle').forEach(c => c.remove());
-}, 1000);
-}
-}
-
-const gameArea = document.getElementById('game-area');
-const scoreElement = document.getElementById('score');
-const menuContainer = document.getElementById('menu-container');
-const titleScreen = document.getElementById('title-screen');
-const difficultyScreen = document.getElementById('difficulty-screen');
-const playButton = document.getElementById('play-button');
-const leftArrow = document.getElementById('left-arrow');
-const rightArrow = document.getElementById('right-arrow');
-const difficultyTextElement = document.getElementById('difficulty-text');
-const selectButton = document.getElementById('select-button');
-const gameEndScreen = document.getElementById('game-end-screen');
-const endMessageElement = document.getElementById('end-message');
-const finalScoreElement = document.getElementById('final-score');
-const playAgainButton = document.getElementById('play-again-button');
-const mainMenuButton = document.getElementById('main-menu-button');
-const pauseScreen = document.getElementById('pause-screen');
-const resumeButton = document.getElementById('resume-button');
-const quitButton = document.getElementById('quit-button');
-const globalQuitButton = document.getElementById('global-quit-button');
-
-// Difficulty settings moved to Game class or a separate config
-const difficulties = ['Easy', 'Normal', 'Hard'];
-
-// Instantiate managers
-const audioManager = new AudioManager();
-const uiManager = new UIManager(
-menuContainer, titleScreen, difficultyScreen, gameEndScreen, pauseScreen,
-difficultyTextElement, endMessageElement, finalScoreElement,
-gameArea, globalQuitButton
-);
-const game = new Game(scoreElement, gameArea, audioManager, uiManager, difficulties);
-
-// --- Event Listeners ---
-playButton.addEventListener('click', () => uiManager.showScreen(difficultyScreen));
-
-leftArrow.addEventListener('click', () => {
-game.currentDifficultyIndex = (game.currentDifficultyIndex - 1 + difficulties.length) % difficulties.length;
-uiManager.updateDifficultyText(difficulties[game.currentDifficultyIndex], true);
-});
-
-rightArrow.addEventListener('click', () => {
-game.currentDifficultyIndex = (game.currentDifficultyIndex + 1) % difficulties.length;
-uiManager.updateDifficultyText(difficulties[game.currentDifficultyIndex], true);
-});
-
-selectButton.addEventListener('click', () => {
-game.selectedDifficulty = difficulties[game.currentDifficultyIndex];
-uiManager.hideScreen(difficultyScreen);
-setTimeout(() => {
-uiManager.hideMenuContainer();
-game.startGameLoop();
-}, 500);
-});
-
-playAgainButton.addEventListener('click', () => {
-uiManager.hideScreen(gameEndScreen);
-uiManager.showScreen(difficultyScreen);
-});
-
-mainMenuButton.addEventListener('click', () => {
-game.endGame("Game Over!"); // Ensure game state is properly reset
-uiManager.showScreen(titleScreen);
-});
-
-resumeButton.addEventListener('click', () => game.resumeGame());
-
-quitButton.addEventListener('click', () => {
-game.endGame("Game Over!");
-uiManager.showScreen(titleScreen);
-});
-
-globalQuitButton.addEventListener('click', () => {
-game.endGame("Game Over!");
-uiManager.showScreen(titleScreen);
-});
-
-// Global keydown listener for game input and pause
-document.addEventListener('keydown', (event) => {
-// Handle pausing
-if (event.key === 'Escape' && game.isGameRunning) {
-if (game.isGamePaused) {
-game.resumeGame();
-} else {
-game.pauseGame();
-}
-return;
-}
-
-// If game is paused or not running, only allow menu navigation
-if (!game.isGameRunning || game.isGamePaused) {
-if (uiManager.difficultyScreen.classList.contains('active')) {
-if (event.key === 'ArrowLeft') {
-event.preventDefault();
-leftArrow.click();
-} else if (event.key === 'ArrowRight') {
-event.preventDefault();
-rightArrow.click();
-} else if (event.key === 'Enter') {
-event.preventDefault();
-selectButton.click();
-}
-} else if (uiManager.gameEndScreen.classList.contains('active')) {
-if (event.key === 'Enter') {
-event.preventDefault();
-playAgainButton.click();
-}
-} else if (uiManager.pauseScreen.classList.contains('active')) {
-if (event.key === 'Enter') {
-event.preventDefault();
-resumeButton.click();
-} else if (event.key === 'q' || event.key === 'Q') {
-event.preventDefault();
-quitButton.click();
-}
-}
-return;
-}
-
-// If game is running and not paused, handle letter input
-game.handleKeyDown(event);
-});
-
-// --- Initialization ---
-// Ensure audio context resume is triggered by a user gesture.
-document.addEventListener('click', () => audioManager.initAudio(), { once: true });
-document.addEventListener('keydown', () => audioManager.initAudio(), { once: true });
-
-window.onload = () => {
-uiManager.initializeMenu(difficulties[game.currentDifficultyIndex]);
-};
-</script>
+    <div class="game-container">
+        <header>
+            <h1><span class="crypto-title-part">Crypto</span> <span class="mining-title-part">Mining Simulator</span></h1>
+            <p class="tagline">Mine virtual crypto and upgrade your rigs!</p>
+        </header>
+
+        <section class="mining-stats">
+            <div id="crypto-card" class="stat-item">
+                <div class="card-header">
+                    <span class="card-brand">CRPT Corp.</span> <!-- Added brand name -->
+                    <span class="card-logo">CRPT COIN <img src="/crypto_coin_icon.png" alt="CRPT Icon" class="coin-icon"></span>
+                </div>
+                
+                <div class="card-number">
+                    <span>••••</span> <span>••••</span> <span>••••</span> <span class="last-digits">1234</span>
+                </div>
+                <div class="card-balance-info"> <!-- Wrapper for both balance and rate -->
+                    <div class="balance-row">
+                        <span class="stat-label">Balance:</span>
+                        <span id="crypto-balance" class="stat-value">0.00 CRPT</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="card-holder">VIRTUAL MINER</span>
+                    <span class="card-valid-thru">VALID THRU 99/99</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="upgrades">
+            <h2>Upgrades</h2>
+            <div class="tab-navigation">
+                <button class="tab-button active" data-category="gpus">GPUs</button>
+                <button class="tab-button" data-category="cpus">CPUs</button>
+                <button class="tab-button" data-category="cooling">Cooling</button>
+                <button class="tab-button" data-category="asic">ASIC Miners</button>
+                <button class="tab-button" data-category="infrastructure">Infrastructure</button>
+                <button class="tab-button" data-category="purchased">My Upgrades</button>
+            </div>
+            <div id="upgrade-content">
+                <div class="tab-content-wrapper">
+                    <div class="upgrade-grid">
+                        <!-- Upgrades will be rendered here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Temporary Message Area -->
+    <div id="message-area"></div>
+
+    <script>
+        // Global variables for audio
+        let audioContext = null;
+        let audioContextInitialized = false;
+        const soundBuffers = {};
+
+        // Function to initialize AudioContext and load sounds
+        // This should be triggered by the first user gesture to comply with browser autoplay policies
+        async function initAudioContextOnce() {
+            if (!audioContextInitialized) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioContextInitialized = true;
+                console.log("AudioContext initialized.");
+
+                // Load all sounds
+                await loadSound('buy', '/buy_upgrade.mp3');
+                await loadSound('mine', '/mine_tick.mp3');
+                await loadSound('click', '/button_click.mp3');
+            }
+        }
+
+        // Function to load a single sound
+        async function loadSound(name, url) {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                soundBuffers[name] = await audioContext.decodeAudioData(arrayBuffer);
+                console.log(`Sound ${name} loaded.`);
+            } catch (error) {
+                console.error(`Error loading sound ${name}:`, error);
+            }
+        }
+
+        // Function to play a sound
+        function playSound(name, volume = 1.0) {
+            if (!audioContextInitialized || !soundBuffers[name]) {
+                // Sound not ready or context not initialized by user gesture yet
+                return; 
+            }
+            const source = audioContext.createBufferSource();
+            source.buffer = soundBuffers[name];
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = volume;
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            source.start(0);
+        }
+
+        // Function to show a temporary message
+        function showMessage(msg, type = 'success') {
+            const msgArea = document.getElementById('message-area');
+            msgArea.textContent = msg;
+            msgArea.className = ''; // Clear previous classes
+            msgArea.classList.add(type);
+            msgArea.style.opacity = '1';
+            msgArea.style.transform = 'translateX(-50%) translateY(0)'; // Move to final position
+
+            setTimeout(() => {
+                msgArea.style.opacity = '0';
+                msgArea.style.transform = 'translateX(-50%) translateY(-20px)'; // Move up slightly as it fades out
+            }, 2500); // Display for 2.5 seconds
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let cryptoBalance = 0;
+            // The initial mining rate is 0.2 CRPT/sec.
+            let miningRate = 0.2; 
+            let currentTab = 'gpus'; // Default active tab
+
+            // Get DOM elements
+            const balanceDisplay = document.getElementById('crypto-balance');
+            const upgradeGrid = document.querySelector('.upgrade-grid');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContentWrapper = document.querySelector('.tab-content-wrapper');
+
+            // Define upgrades
+            const upgrades = {
+                gpus: {
+                    gpu1: { cost: 10, rateIncrease: 0.5, name: "GPU Upgrade v1.0", description: "Boosts mining power with a dedicated graphics processing unit.", purchased: false },
+                    gpu2: { cost: 80, rateIncrease: 2.5, name: "Next-Gen GPU Array", description: "Enhances processing with advanced multi-GPU setup.", purchased: false },
+                    gpu3: { cost: 400, rateIncrease: 15.0, name: "Quantum GPU Grid", description: "Leverages quantum computing principles for extreme mining.", purchased: false },
+                    gpu4: { cost: 1500, rateIncrease: 50.0, name: "Graviton GPU Cluster", description: "Utilizes advanced graviton technology for unparalleled hash rates.", purchased: false },
+                    gpu5: { cost: 6000, rateIncrease: 200.0, name: "Neural Network Processor", description: "A specialized AI-powered GPU designed for hyper-efficient mining algorithms.", purchased: false },
+                    gpu6: { cost: 25000, rateIncrease: 800.0, name: "Dark Matter GPU Array", description: "Taps into dark matter energy for unprecedented processing power.", purchased: false },
+                    gpu7: { cost: 100000, rateIncrease: 3500.0, name: "Cosmic Ray GPU", description: "Captures cosmic rays for instantaneous, hyper-parallel computation.", purchased: false },
+                    gpu8: { cost: 400000, rateIncrease: 15000.0, name: "Singularity GPU Core", description: "A theoretical GPU utilizing a micro-singularity for infinite compute density.", purchased: false }
+                },
+                cpus: {
+                    cpu1: { cost: 20, rateIncrease: 0.5, name: "Basic CPU Cluster", description: "Establishes a foundational processing cluster.", purchased: false },
+                    cpu2: { cost: 150, rateIncrease: 5.0, name: "Advanced CPU Rack", description: "Integrates high-performance server-grade CPUs.", purchased: false },
+                    cpu3: { cost: 700, rateIncrease: 25.0, name: "Neural Processing Unit", description: "Specialized AI chips for highly efficient data processing.", purchased: false },
+                    cpu4: { cost: 1800, rateIncrease: 60.0, name: "Ultra Sipolss CPU", description: "Unleash unparalleled processing power with this cutting-edge CPU.", purchased: false },
+                    cpu5: { cost: 5500, rateIncrease: 180.0, name: "Fusion Core Processor", description: "Harnesses miniature fusion reactions for extreme computational power.", purchased: false },
+                    cpu6: { cost: 22000, rateIncrease: 700.0, name: "Quantum Entanglement CPU", description: "Utilizes quantum entanglement for instant data transfer across processors.", purchased: false },
+                    cpu7: { cost: 90000, rateIncrease: 2800.0, name: "Temporal Displacement CPU", description: "Manipulates local spacetime to accelerate computational cycles.", purchased: false },
+                    cpu8: { cost: 350000, rateIncrease: 12000.0, name: "Universal Brain Interface", description: "Directly links to a simulated universal consciousness for processing.", purchased: false }
+                },
+                cooling: {
+                    cooling1: { cost: 50, rateIncrease: 1.0, name: "Cooling System", description: "Optimizes hardware performance by preventing overheating.", purchased: false },
+                    cooling2: { cost: 300, rateIncrease: 8.0, name: "Liquid Immersion Cooling", description: "Submerges hardware in dielectric fluid for ultimate heat dissipation.", purchased: false },
+                    cooling3: { cost: 1200, rateIncrease: 40.0, name: "Cryogenic Cooling Chamber", description: "Achieves near-absolute zero temperatures for peak efficiency.", purchased: false },
+                    cooling4: { cost: 4500, rateIncrease: 150.0, name: "Absolute Zero Refrigerator", description: "Maintains optimal temperatures by pushing the limits of physics.", purchased: false },
+                    cooling5: { cost: 18000, rateIncrease: 600.0, name: "Dark Energy Sinks", description: "Utilizes exotic physics to dissipate heat into an alternate dimension.", purchased: false },
+                    cooling6: { cost: 70000, rateIncrease: 2500.0, name: "Interstellar Radiator Array", description: "Deploys an array of radiators capable of shedding heat into space.", purchased: false }
+                },
+                asic: {
+                    asic1: { cost: 200, rateIncrease: 3.0, name: "ASIC Miner", description: "Specialized hardware designed for highly efficient crypto mining.", purchased: false },
+                    asic2: { cost: 750, rateIncrease: 12.0, name: "Industrial ASIC Farm", description: "A compact farm of custom-built ASIC chips.", purchased: false },
+                    asic3: { cost: 3000, rateIncrease: 75.0, name: "Quantum Tunneling Miner", description: "Theoretical miner using quantum effects for unparalleled speed.", purchased: false },
+                    asic4: { cost: 9000, rateIncrease: 250.0, name: "Interdimensional ASIC Array", description: "Taps into alternate dimensions for hyper-accelerated computation.", purchased: false },
+                    asic5: { cost: 35000, rateIncrease: 1000.0, name: "Universal Hashing Chip", description: "A groundbreaking ASIC designed to optimize any cryptographic hash function.", purchased: false },
+                    asic6: { cost: 140000, rateIncrease: 4000.0, name: "Time-Warp Miner", description: "Bends local spacetime to perform computations in fractions of a second.", purchased: false }
+                },
+                infrastructure: {
+                    serverfarm1: { cost: 1000, rateIncrease: 10.0, name: "Server Farm Lease", description: "Lease a massive server farm for unparalleled computing power.", purchased: false },
+                    datacenter: { cost: 5000, rateIncrease: 50.0, name: "Hyperscale Datacenter", description: "Own and operate a cutting-edge, global datacenter.", purchased: false },
+                    planetarynetwork: { cost: 20000, rateIncrease: 200.0, name: "Planetary Mining Network", description: "Connects mining rigs across the globe for distributed power.", purchased: false },
+                    solararray: { cost: 75000, rateIncrease: 750.0, name: "Orbital Solar Array", description: "Powers your operations with an enormous space-based solar farm.", purchased: false },
+                    quantumfabric: { cost: 250000, rateIncrease: 2500.0, name: "Quantum Fabric Infrastructure", description: "A continent-spanning network utilizing quantum entanglement for instantaneous data transfer.", purchased: false },
+                    spacestation: { cost: 1000000, rateIncrease: 10000.0, name: "Deep Space Mining Station", description: "Establishes a self-sufficient mining outpost beyond Earth's orbit.", purchased: false },
+                    blackholeharness: { cost: 5000000, rateIncrease: 50000.0, name: "Micro Black Hole Harness", description: "Taps into the Hawking radiation of a controlled micro black hole for energy.", purchased: false }
+                }
+            };
+
+            // Function to update the display
+            function updateDisplay() {
+                const balanceText = `${cryptoBalance.toFixed(2)} CRPT`;
+                balanceDisplay.textContent = balanceText;
+
+                // Add pulse effect to balance display
+                balanceDisplay.classList.add('pulsing');
+
+                // Remove the class after the animation duration to allow re-triggering
+                setTimeout(() => {
+                    balanceDisplay.classList.remove('pulsing');
+                }, 500); // Match CSS animation duration
+
+                // Dynamic font sizing for balance display
+                balanceDisplay.classList.remove('balance-small-font', 'balance-smaller-font', 'balance-smallest-font'); // Clear existing size classes
+
+                if (balanceText.length > 22) { // e.g., 10,000,000,000.00 CRPT (23 chars)
+                    balanceDisplay.classList.add('balance-smallest-font');
+                } else if (balanceText.length > 18) { // e.g., 100,000,000.00 CRPT (19 chars)
+                    balanceDisplay.classList.add('balance-smaller-font');
+                } else if (balanceText.length > 14) { // e.g., 1,000,000.00 CRPT (15 chars)
+                    balanceDisplay.classList.add('balance-small-font');
+                }
+                // If 14 or less characters, it will use the default font size (2.8em or 2.2em on mobile).
+
+                // Only update button states if not on the "My Upgrades" tab, or if a purchase occurred
+                if (currentTab !== 'purchased') {
+                    updateUpgradeButtonStates();
+                }
+            }
+
+            // Function to mine crypto
+            function mineCrypto() {
+                cryptoBalance += miningRate;
+                updateDisplay();
+                playSound('mine', 0.3); // Play subtle mine sound, made louder
+            }
+
+            // Function to handle upgrade purchases
+            function buyUpgrade(upgradeId, category) {
+                const upgrade = upgrades[category][upgradeId];
+
+                if (!upgrade || upgrade.purchased) {
+                    return; // Already purchased or invalid upgrade
+                }
+
+                if (cryptoBalance >= upgrade.cost) {
+                    // Added detailed console logs to help debug rate increase issues
+                    console.log(`--- Attempting to purchase: ${upgrade.name} ---`);
+                    console.log(`Current Balance: ${cryptoBalance.toFixed(2)} CRPT`);
+                    console.log(`Current Mining Rate BEFORE purchase: ${miningRate.toFixed(2)} CRPT/sec`);
+                    console.log(`Upgrade cost: ${upgrade.cost} CRPT`);
+                    console.log(`Upgrade's advertised rate increase (upgrade.rateIncrease): ${upgrade.rateIncrease} CRPT/sec`);
+
+                    cryptoBalance -= upgrade.cost;
+                    miningRate += upgrade.rateIncrease; // This is where the rate is increased
+
+                    upgrade.purchased = true; // Mark as purchased
+                    updateDisplay();
+                    playSound('buy', 0.7); // Play buy sound
+                    
+                    console.log(`NEW Balance AFTER purchase: ${cryptoBalance.toFixed(2)} CRPT`);
+                    console.log(`NEW Mining Rate AFTER purchase: ${miningRate.toFixed(2)} CRPT/sec`);
+                    console.log(`Difference in mining rate: ${(miningRate - (miningRate - upgrade.rateIncrease)).toFixed(2)} CRPT/sec (should match advertised increase)`);
+
+                    // Show success message on screen
+                    const message = `Purchased "${upgrade.name}"! Rate increased by +${upgrade.rateIncrease.toFixed(2)} CRPT/sec. New total rate: ${miningRate.toFixed(2)} CRPT/sec.`;
+                    showMessage(message, 'success');
+
+                    // If the "My Upgrades" tab is currently active, re-render it
+                    if (currentTab === 'purchased') {
+                        _renderContent('purchased'); // Re-render 'purchased' tab without animation delay
+                        tabContentWrapper.classList.add('active-tab-content'); // Ensure it's visible
+                    } else {
+                        // If we bought an item on a regular tab, its button state needs update
+                        updateUpgradeButtonStates();
+                    }
+                } else {
+                    console.log(`Not enough crypto for ${upgrade.name}. Need ${upgrade.cost}, have ${cryptoBalance.toFixed(2)}.`);
+                    // Show error message on screen
+                    showMessage(`Not enough CRPT for "${upgrade.name}". Need ${upgrade.cost.toFixed(2)} CRPT.`, 'error');
+                }
+            }
+
+            // Helper function to actually render content into the grid
+            function _renderContent(category) {
+                upgradeGrid.innerHTML = ''; // Clear current upgrades
+
+                let upgradesToRender = [];
+
+                if (category === 'purchased') {
+                    // Collect all purchased upgrades from all categories
+                    for (const catKey in upgrades) {
+                        for (const upgradeId in upgrades[catKey]) {
+                            const upgrade = upgrades[catKey][upgradeId];
+                            if (upgrade.purchased) {
+                                upgradesToRender.push(upgrade);
+                            }
+                        }
+                    }
+                    if (upgradesToRender.length === 0) {
+                        upgradeGrid.innerHTML = '<p class="no-upgrades-message">You haven\'t purchased any upgrades yet. Go to other tabs to buy some!</p>';
+                        return;
+                    }
+                } else {
+                    // For other categories, render items from that specific category
+                    upgradesToRender = Object.values(upgrades[category]);
+                }
+
+                upgradesToRender.forEach(upgrade => {
+                    const upgradeCard = document.createElement('div');
+                    upgradeCard.classList.add('upgrade-card');
+                    // Add purchased-display class if applicable, regardless of tab
+                    if (upgrade.purchased) {
+                        upgradeCard.classList.add('purchased-display');
+                    }
+
+                    let buttonHtml = '';
+                    if (category !== 'purchased') { // Only show buy button on non-purchased tabs
+                        // Find the original key for the upgrade object to pass to buyUpgrade
+                        let upgradeKey = null;
+                        for (const key in upgrades[category]) {
+                            if (upgrades[category][key] === upgrade) {
+                                upgradeKey = key;
+                                break;
+                            }
+                        }
+                        buttonHtml = `<button data-upgrade-id="${upgradeKey}" data-upgrade-category="${category}">Buy for <span class="cost">${upgrade.cost}</span> CRPT</button>`;
+                    } else {
+                        // For "My Upgrades" tab, just show status
+                        buttonHtml = `<button disabled class="purchased">Purchased!</button>`;
+                    }
+
+                    // Always format rate increase to two decimal places for consistency
+                    const rateDisplay = upgrade.rateIncrease.toFixed(2);
+
+                    upgradeCard.innerHTML = `
+                        <h3>${upgrade.name}</h3>
+                        <p>${upgrade.description}</p>
+                        <p class="upgrade-effect">+${rateDisplay} CRPT/sec</p>
+                        ${buttonHtml}
+                    `;
+                    upgradeGrid.appendChild(upgradeCard);
+                });
+
+                if (category !== 'purchased') {
+                    updateUpgradeButtonStates(); // Update states for newly rendered buttons only on purchase tabs
+                }
+            }
+
+            // Function to render upgrades for the current active tab with animation
+            function renderUpgradesForTab(category, immediate = false) {
+                if (!immediate && tabContentWrapper.classList.contains('active-tab-content')) {
+                    // If not immediate and content is currently active, fade out first
+                    tabContentWrapper.classList.remove('active-tab-content');
+                    setTimeout(() => {
+                        _renderContent(category);
+                        tabContentWrapper.classList.add('active-tab-content'); // Fade in new content
+                    }, 400); // This delay should match the CSS transition duration for fade-out
+                } else {
+                    // For initial load or direct updates (e.g., after purchase in 'My Upgrades' tab)
+                    _renderContent(category);
+                    tabContentWrapper.classList.add('active-tab-content'); // Immediately show
+                }
+            }
+
+            // Function to update the disabled state of upgrade buttons
+            function updateUpgradeButtonStates() {
+                // Select all buttons within the current upgrade grid
+                const currentUpgradeButtons = upgradeGrid.querySelectorAll('button');
+
+                currentUpgradeButtons.forEach(button => {
+                    const upgradeId = button.dataset.upgradeId;
+                    const category = button.dataset.upgradeCategory;
+                    const parentCard = button.closest('.upgrade-card'); // Get the parent card element
+
+                    // Ensure upgrade object exists before trying to access properties
+                    if (upgrades[category] && upgrades[category][upgradeId]) {
+                        const upgrade = upgrades[category][upgradeId];
+
+                        if (upgrade.purchased) {
+                            button.disabled = true;
+                            button.textContent = "Purchased!";
+                            button.style.cursor = 'default';
+                            button.classList.add('purchased'); // Add class for specific styling
+                            if (parentCard) parentCard.classList.add('purchased-display'); // Add class to card
+                        } else if (cryptoBalance < upgrade.cost) {
+                            button.disabled = true;
+                            button.textContent = `Buy for ${upgrade.cost} CRPT`; // Ensure text updates if player spent money elsewhere
+                            button.classList.remove('purchased'); // Ensure class is removed if not purchased
+                            if (parentCard) parentCard.classList.remove('purchased-display'); // Remove class from card
+                        } else {
+                            button.disabled = false;
+                            button.textContent = `Buy for ${upgrade.cost} CRPT`;
+                            button.classList.remove('purchased'); // Ensure class is removed
+                            if (parentCard) parentCard.classList.remove('purchased-display'); // Remove class from card
+                        }
+                    }
+                });
+            }
+
+            // Add event listeners for tab buttons
+            tabButtons.forEach(button => {
+                button.addEventListener('click', (event) => {
+                    playSound('click', 0.5); // Play click sound
+                    // Remove 'active' class from all tab buttons
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add 'active' class to the clicked button
+                    event.target.classList.add('active');
+
+                    currentTab = event.target.dataset.category;
+                    renderUpgradesForTab(currentTab); // Render upgrades for the selected tab with animation
+                });
+            });
+
+            // Add event listener to the upgrade grid itself (event delegation)
+            upgradeGrid.addEventListener('click', (event) => {
+                if (event.target.tagName === 'BUTTON' && event.target.dataset.upgradeId) {
+                    playSound('click', 0.5); // Play click sound for any purchase attempt
+                    const upgradeId = event.target.dataset.upgradeId;
+                    const category = event.target.dataset.upgradeCategory;
+                    buyUpgrade(upgradeId, category);
+                }
+            });
+
+            // Trigger AudioContext initialization on first user interaction with the body
+            // This ensures that audio playback is allowed by browsers (due to autoplay policies)
+            document.body.addEventListener('click', initAudioContextOnce, { once: true });
+            document.body.addEventListener('keydown', initAudioContextOnce, { once: true });
+
+            // Start mining interval
+            setInterval(mineCrypto, 1000); // Mine every second
+
+            // Initial display update and render default tab immediately
+            renderUpgradesForTab(currentTab, true);
+            updateDisplay();
+        });
+    </script>
 </body>
 </html>
